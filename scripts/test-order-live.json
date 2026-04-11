@@ -1,0 +1,12 @@
+{
+  "companyName": "山形県森林組合連合会",
+  "contactName": "【テスト送信】Claude Code 秘書",
+  "email": "s_miyamoto@greensprout0315.com",
+  "phone": "000-0000-0000",
+  "lines": [
+    { "specId": "std-008-30-50", "colorId": "pink", "quantity": 60 },
+    { "specId": "std-008-30-50", "colorId": "blue", "quantity": 40 },
+    { "specId": "std-01-15-50", "colorId": "yellow", "quantity": 20 }
+  ],
+  "notes": "これは /api/order のメール送信テストです。Gmail SMTP (nodemailer) 経由で s_miyamoto@greensprout0315.com と maki_kumabe@taketani.co.jp の2名へ通知が届く想定です。届いたことを確認後、このテストメールは破棄してください。"
+}

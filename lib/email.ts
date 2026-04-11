@@ -18,6 +18,7 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { COLORS, formatJpy } from "./product-master";
 import type { OrderRequest, Quote } from "./order";
+import { generateEstimatePdf, generatePdfFilename } from "./pdf";
 
 // ──────────────────────────────────────────────────────────────
 //  送信先設定
@@ -328,7 +329,7 @@ function renderCustomerConfirmHtml(
           <div style="font-size:14px;color:#1C3557;margin-bottom:16px;">${escapeHtml(order.contactName)} 様</div>
           <p style="font-size:13px;color:#4B5563;line-height:1.8;margin:0;">
             このたびは竹谷商事の識別テープをご用命いただき、誠にありがとうございます。<br>
-            下記の内容で発注を承りました。担当より別途、正式なお見積書をメールにてお送りいたしますので、<br>
+            下記の内容で発注を承り、お見積書（PDF）を本メールに添付いたしました。<br>
             内容をご確認のうえ、ご返信にてご承認くださいますようお願い申し上げます。
           </p>
         </td></tr>
@@ -405,10 +406,10 @@ function renderCustomerConfirmHtml(
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F9FAFB;padding:0;">
             <tr>
               <td style="padding:16px;font-size:13px;color:#4B5563;line-height:1.9;">
-                <div><span style="color:#E07B2A;font-weight:bold;">1.</span> 担当者が内容を確認し、正式な見積書（PDF）を作成します</div>
-                <div><span style="color:#E07B2A;font-weight:bold;">2.</span> このメールアドレス宛に見積書をお送りします（1〜2営業日以内）</div>
-                <div><span style="color:#E07B2A;font-weight:bold;">3.</span> 見積書の内容をご確認のうえ、ご返信にてご承認ください</div>
-                <div><span style="color:#E07B2A;font-weight:bold;">4.</span> 承認後、出荷準備に入り、発送完了のご連絡をいたします</div>
+                <div><span style="color:#E07B2A;font-weight:bold;">1.</span> 添付の見積書（PDF）をご確認ください</div>
+                <div><span style="color:#E07B2A;font-weight:bold;">2.</span> 内容に問題なければ、このメールにそのままご返信にてご承認ください</div>
+                <div><span style="color:#E07B2A;font-weight:bold;">3.</span> 承認後、担当より正式書類とともに出荷手配のご連絡をいたします</div>
+                <div><span style="color:#E07B2A;font-weight:bold;">4.</span> 出荷完了後、発送通知をお送りいたします</div>
                 <div><span style="color:#E07B2A;font-weight:bold;">5.</span> 発送後、ご請求書を別途お送りいたします</div>
               </td>
             </tr>
@@ -444,9 +445,8 @@ function renderCustomerConfirmText(
     `${order.contactName} 様`,
     "",
     "このたびは竹谷商事の識別テープをご用命いただき、誠にありがとうございます。",
-    "下記の内容で発注を承りました。担当より別途、正式なお見積書をメールにてお送り",
-    "いたしますので、内容をご確認のうえ、ご返信にてご承認くださいますようお願い",
-    "申し上げます。",
+    "下記の内容で発注を承り、お見積書（PDF）を本メールに添付いたしました。",
+    "内容をご確認のうえ、ご返信にてご承認くださいますようお願い申し上げます。",
     "",
     "====================================",
     `  発注番号: ${order.id}`,
@@ -473,10 +473,10 @@ function renderCustomerConfirmText(
     "※正式金額は後日お送りする見積書にてご確認ください",
     "",
     "── 今後の流れ ──",
-    "1. 担当者が内容を確認し、正式な見積書（PDF）を作成します",
-    "2. このメールアドレス宛に見積書をお送りします（1〜2営業日以内）",
-    "3. 見積書の内容をご確認のうえ、ご返信にてご承認ください",
-    "4. 承認後、出荷準備に入り、発送完了のご連絡をいたします",
+    "1. 添付の見積書（PDF）をご確認ください",
+    "2. 内容に問題なければ、このメールにそのままご返信にてご承認ください",
+    "3. 承認後、担当より正式書類とともに出荷手配のご連絡をいたします",
+    "4. 出荷完了後、発送通知をお送りいたします",
     "5. 発送後、ご請求書を別途お送りいたします",
     "",
     "── お問い合わせ ──",
@@ -566,6 +566,13 @@ function getTransporter(): Transporter | null {
   return cachedTransporter;
 }
 
+/** PDF 添付ファイル（両方の宛先で共有） */
+type PdfAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
+
 /**
  * 社内向け 発注通知メールを送信
  */
@@ -573,7 +580,8 @@ async function sendInternalNotification(
   order: OrderRequest,
   quote: Quote,
   transporter: Transporter,
-  from: string
+  from: string,
+  attachment?: PdfAttachment
 ): Promise<EmailSendResult> {
   const isSpecial = quote.priceTier === "special";
   const subject = `【竹谷商事 発注通知】${order.companyName} 様 / ${formatJpy(quote.total)}（税込）${isSpecial ? " [特価]" : ""} / ${order.id}`;
@@ -586,12 +594,14 @@ async function sendInternalNotification(
       subject,
       html: renderOrderEmailHtml(order, quote),
       text: renderOrderEmailText(order, quote),
+      attachments: attachment ? [attachment] : undefined,
     });
     console.log("[EMAIL] 社内通知メール送信成功", {
       orderId: order.id,
       messageId: info.messageId,
       accepted: info.accepted,
       rejected: info.rejected,
+      hasAttachment: !!attachment,
     });
     return { ok: true, id: info.messageId || "" };
   } catch (error) {
@@ -611,9 +621,10 @@ async function sendCustomerConfirmation(
   order: OrderRequest,
   quote: Quote,
   transporter: Transporter,
-  from: string
+  from: string,
+  attachment?: PdfAttachment
 ): Promise<EmailSendResult> {
-  const subject = `【竹谷商事】ご発注を承りました / ${order.id}`;
+  const subject = `【竹谷商事】お見積書をお送りします / ${order.id}`;
 
   try {
     const info = await transporter.sendMail({
@@ -623,11 +634,13 @@ async function sendCustomerConfirmation(
       subject,
       html: renderCustomerConfirmHtml(order, quote),
       text: renderCustomerConfirmText(order, quote),
+      attachments: attachment ? [attachment] : undefined,
     });
     console.log("[EMAIL] 顧客受付確認メール送信成功", {
       orderId: order.id,
       messageId: info.messageId,
       recipient: order.email,
+      hasAttachment: !!attachment,
     });
     return { ok: true, id: info.messageId || "" };
   } catch (error) {
@@ -648,7 +661,12 @@ async function sendCustomerConfirmation(
  * どちらかが失敗しても片方は届くよう、Promise.allSettled で並列送信。
  */
 export type OrderNotificationResult =
-  | { ok: true; internal: EmailSendResult; customer: EmailSendResult }
+  | {
+      ok: true;
+      internal: EmailSendResult;
+      customer: EmailSendResult;
+      pdfAttached: boolean;
+    }
   | { ok: false; reason: "disabled" };
 
 export async function sendOrderNotification(
@@ -665,11 +683,33 @@ export async function sendOrderNotification(
     return { ok: false, reason: "disabled" };
   }
 
+  // 見積書 PDF を1回だけ生成して両メールで共有
+  //  生成失敗時は PDF なしで送信（メール本文だけで内容は伝わる）
+  let attachment: PdfAttachment | undefined;
+  try {
+    const pdfBuffer = await generateEstimatePdf(order, quote);
+    attachment = {
+      filename: generatePdfFilename(quote.id),
+      content: pdfBuffer,
+      contentType: "application/pdf",
+    };
+    console.log("[EMAIL] 見積書 PDF 生成成功", {
+      orderId: order.id,
+      pdfSize: pdfBuffer.length,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      "[EMAIL] 見積書 PDF 生成に失敗したため添付なしで送信します",
+      { orderId: order.id, error: message }
+    );
+  }
+
   // 社内通知とお客様受付確認を並列送信
   //  どちらかが失敗しても、もう片方は正常に送られる
   const [internalSettled, customerSettled] = await Promise.allSettled([
-    sendInternalNotification(order, quote, transporter, from),
-    sendCustomerConfirmation(order, quote, transporter, from),
+    sendInternalNotification(order, quote, transporter, from, attachment),
+    sendCustomerConfirmation(order, quote, transporter, from, attachment),
   ]);
 
   const internal: EmailSendResult =
@@ -696,5 +736,5 @@ export async function sendOrderNotification(
               : String(customerSettled.reason),
         };
 
-  return { ok: true, internal, customer };
+  return { ok: true, internal, customer, pdfAttached: !!attachment };
 }

@@ -136,6 +136,7 @@ export async function POST(request: Request) {
         (emailResult.internal.ok || emailResult.customer.ok),
       internalSent: emailResult.ok && emailResult.internal.ok,
       customerSent: emailResult.ok && emailResult.customer.ok,
+      pdfAttached: emailResult.ok && emailResult.pdfAttached,
     });
   } catch (error) {
     console.error("[ORDER] unexpected error", {
