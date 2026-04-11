@@ -584,7 +584,8 @@ async function sendInternalNotification(
   attachment?: PdfAttachment
 ): Promise<EmailSendResult> {
   const isSpecial = quote.priceTier === "special";
-  const subject = `【竹谷商事 発注通知】${order.companyName} 様 / ${formatJpy(quote.total)}（税込）${isSpecial ? " [特価]" : ""} / ${order.id}`;
+  const quoteRef = quote.quoteNumber ? `見積№${quote.quoteNumber}` : order.id;
+  const subject = `【竹谷商事 発注通知】${order.companyName} 様 / ${formatJpy(quote.total)}（税込）${isSpecial ? " [特価]" : ""} / ${quoteRef}`;
 
   try {
     const info = await transporter.sendMail({
@@ -624,7 +625,8 @@ async function sendCustomerConfirmation(
   from: string,
   attachment?: PdfAttachment
 ): Promise<EmailSendResult> {
-  const subject = `【竹谷商事】お見積書をお送りします / ${order.id}`;
+  const quoteRef = quote.quoteNumber ? `見積№${quote.quoteNumber}` : order.id;
+  const subject = `【竹谷商事】お見積書をお送りします / ${quoteRef}`;
 
   try {
     const info = await transporter.sendMail({

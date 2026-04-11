@@ -75,6 +75,8 @@ export type QuoteLine = {
 export type Quote = {
   /** 見積ID（通常は OrderRequest.id と同じ） */
   id: string;
+  /** 連番の見積番号 (例: 24200) — サーバで採番 */
+  quoteNumber?: number;
   /** 生成日時 (ISO8601) */
   issuedAt: string;
   /** 有効期限 (ISO8601) */

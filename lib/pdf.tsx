@@ -512,14 +512,29 @@ function fmt(value: number): string {
 }
 
 // ──────────────────────────────────────────────────────────────
-//  見積№ 生成（最大5文字の短縮形）
+//  見積№ の表示
+//
+//  Vercel Blob の原子カウンターから採番された quote.quoteNumber を
+//  そのまま表示する。万が一採番に失敗した場合（Blob不達等）は
+//  タイムスタンプ派生のフォールバックを使う。
 // ──────────────────────────────────────────────────────────────
 
-function toQuoteNumber(orderId: string): string {
-  // ORD-20260411-220000-9891 → 末尾の乱数部分を使う
-  const parts = orderId.split("-");
-  const last = parts[parts.length - 1] || orderId;
-  return last.slice(-5);
+// フォールバック用（通常は使われない）
+const QUOTE_NUMBER_BASE_TIME = Date.UTC(2026, 3, 10, 15, 0, 0);
+const QUOTE_NUMBER_FALLBACK_BASE = 24200;
+
+function fallbackQuoteNumber(issuedAt: string): string {
+  const t = new Date(issuedAt).getTime();
+  const elapsed = Math.max(0, t - QUOTE_NUMBER_BASE_TIME);
+  const minutes = Math.floor(elapsed / 60000);
+  return String(QUOTE_NUMBER_FALLBACK_BASE + minutes);
+}
+
+function displayQuoteNumber(quote: Quote): string {
+  if (typeof quote.quoteNumber === "number") {
+    return String(quote.quoteNumber);
+  }
+  return fallbackQuoteNumber(quote.issuedAt);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -538,7 +553,7 @@ function EstimateDocument({ order, quote }: Props) {
   const displayLines = lines.slice(0, MAX_ROWS - 2); // 「送料」行と税計行の余裕
   const emptyRows = Math.max(0, MAX_ROWS - displayLines.length);
 
-  const quoteNo = toQuoteNumber(quote.id);
+  const quoteNo = displayQuoteNumber(quote);
   const issueDate = formatReiwa(quote.issuedAt);
 
   // 要件

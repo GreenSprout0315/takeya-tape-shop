@@ -16,6 +16,7 @@ import {
 } from "@/lib/order";
 import { findCustomerByName } from "@/lib/customer-master";
 import { sendOrderNotification } from "@/lib/email";
+import { getNextQuoteNumber } from "@/lib/counter";
 
 type RawOrderInput = Omit<OrderRequest, "id" | "receivedAt"> & {
   id?: string;
@@ -73,6 +74,23 @@ export async function POST(request: Request) {
     // 顧客マッチング & 見積生成
     const matchedCustomer = findCustomerByName(orderRequest.companyName);
     const quote = buildQuote(orderRequest, { matchedCustomer });
+
+    // 見積番号（連番）を Vercel Blob の原子カウンターから採番
+    //  失敗してもメール送信を止めないよう、エラーは捕捉する
+    try {
+      quote.quoteNumber = await getNextQuoteNumber();
+      console.log("[ORDER] 連番採番成功", {
+        requestId,
+        id,
+        quoteNumber: quote.quoteNumber,
+      });
+    } catch (err) {
+      console.error("[ORDER] 連番採番失敗 (fallback to 未採番)", {
+        requestId,
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
 
     // サーバーログ出力（Vercel Functions ログで確認可能）
     console.log("[ORDER RECEIVED]", {
