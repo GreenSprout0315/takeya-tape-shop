@@ -15,6 +15,7 @@ import {
   type OrderRequest,
 } from "@/lib/order";
 import { findCustomerByName } from "@/lib/customer-master";
+import { sendOrderNotification } from "@/lib/email";
 
 type RawOrderInput = Omit<OrderRequest, "id" | "receivedAt"> & {
   id?: string;
@@ -91,13 +92,27 @@ export async function POST(request: Request) {
       JSON.stringify({ requestId, orderRequest, quote }, null, 2)
     );
 
-    // TODO Phase B-next: Resend / Gmail で s_miyamoto@greensprout0315.com へ通知
+    // 発注通知メール送信（Resend 経由）
+    //  - s_miyamoto@greensprout0315.com
+    //  - maki_kumabe@taketani.co.jp
+    // 失敗しても API レスポンスは成功として返す（顧客体験を壊さないため）
+    const emailResult = await sendOrderNotification(orderRequest, quote);
+    if (!emailResult.ok) {
+      console.warn("[ORDER] email dispatch skipped or failed", {
+        requestId,
+        id,
+        reason: emailResult.reason,
+        error: "error" in emailResult ? emailResult.error : undefined,
+      });
+    }
+
     // TODO Phase C: Neon Postgres に永続化
 
     return NextResponse.json({
       ok: true,
       id,
       quote,
+      emailSent: emailResult.ok,
     });
   } catch (error) {
     console.error("[ORDER] unexpected error", {
