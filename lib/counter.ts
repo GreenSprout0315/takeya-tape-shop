@@ -27,7 +27,12 @@ type ReadResult = { value: number; etag: string } | null;
 
 async function readCurrent(): Promise<ReadResult> {
   try {
-    const result = await get(COUNTER_KEY, { access: "public" });
+    // useCache: false で CDN キャッシュを完全にバイパスし、
+    // 必ず最新の値を origin storage から取得する（カウンターの整合性のため）
+    const result = await get(COUNTER_KEY, {
+      access: "private",
+      useCache: false,
+    });
     if (!result || result.statusCode !== 200 || !result.stream) {
       return null;
     }
@@ -47,7 +52,7 @@ async function readCurrent(): Promise<ReadResult> {
 
 async function writeCounter(value: number, ifMatch?: string): Promise<void> {
   await put(COUNTER_KEY, String(value), {
-    access: "public",
+    access: "private",
     allowOverwrite: true,
     addRandomSuffix: false,
     contentType: "text/plain; charset=utf-8",
