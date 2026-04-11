@@ -26,8 +26,11 @@ export default function Header() {
           <Link href="/products?category=厚手・特殊テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
             厚手・特殊
           </Link>
-          <Link href="/contact" className="text-sm tracking-widest uppercase text-[#E07B2A] hover:text-[#1C3557] transition-colors">
+          <Link href="/contact" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
             お問い合わせ
+          </Link>
+          <Link href="/order" className="text-sm tracking-widest uppercase px-4 py-2 bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors">
+            発注する
           </Link>
         </nav>
 
@@ -58,8 +61,11 @@ export default function Header() {
           <Link href="/products?category=厚手・特殊テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
             厚手・特殊テープ
           </Link>
-          <Link href="/contact" onClick={() => setMenuOpen(false)} className="text-sm text-[#E07B2A] hover:text-[#1C3557] transition-colors py-2">
+          <Link href="/contact" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
             お問い合わせ
+          </Link>
+          <Link href="/order" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase px-4 py-3 bg-[#E07B2A] text-white text-center">
+            発注する
           </Link>
         </nav>
       )}
