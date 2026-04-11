@@ -1,20 +1,21 @@
 /**
  * Email — 発注通知メール送信
  *
- * Resend API 経由で、発注受信時にオーナー＆竹谷商事担当者へ通知メールを送信する。
+ * Gmail SMTP (アプリパスワード経由) で、発注受信時にオーナー＆竹谷商事担当者へ
+ * 通知メールを送信する。既存の greensprout-company/invoice.js と同じ
+ * 認証スキームを流用している。
  *
  * 必要な環境変数:
- * - RESEND_API_KEY: Resend の API キー
- * - ORDER_NOTIFY_FROM (optional): 送信元メールアドレス
- *     デフォルトは "onboarding@resend.dev"（Resend の検証不要アドレス）
- *     独自ドメインを使う場合は Resend ダッシュボードでドメイン検証が必要
+ * - GMAIL_USER: 送信元 Gmail アドレス (例: s_miyamoto@greensprout0315.com)
+ * - GMAIL_APP_PASSWORD: Gmail アプリパスワード (2FA 必須、16文字)
+ * - ORDER_NOTIFY_FROM_NAME (optional): 送信者表示名 (デフォルト "竹谷商事 発注フォーム")
  *
  * グレースフル・デグラデーション:
- * - RESEND_API_KEY が未設定の場合はメール送信をスキップして warning ログを出す
+ * - 必要な環境変数が未設定の場合はメール送信をスキップして warning ログを出す
  * - これにより ローカル開発でも本番でも動作が壊れない
  */
 
-import { Resend } from "resend";
+import nodemailer, { type Transporter } from "nodemailer";
 import { COLORS, formatJpy } from "./product-master";
 import type { OrderRequest, Quote } from "./order";
 
@@ -22,18 +23,22 @@ import type { OrderRequest, Quote } from "./order";
 //  送信先設定
 // ──────────────────────────────────────────────────────────────
 
-/** 発注通知メールの受信者（必ず CC するアドレス） */
+/** 発注通知メールの受信者（両方へ同送） */
 export const ORDER_NOTIFY_RECIPIENTS = [
   "s_miyamoto@greensprout0315.com",
   "maki_kumabe@taketani.co.jp",
 ];
 
-/** 送信元メールアドレス（環境変数で上書き可能） */
-function getFromAddress(): string {
-  return (
-    process.env.ORDER_NOTIFY_FROM ||
-    "竹谷商事 発注フォーム <onboarding@resend.dev>"
-  );
+/** 送信者表示名 */
+function getFromName(): string {
+  return process.env.ORDER_NOTIFY_FROM_NAME || "竹谷商事 発注フォーム";
+}
+
+/** 送信元メールアドレス（環境変数 GMAIL_USER を使用） */
+function getFromAddress(): string | null {
+  const user = process.env.GMAIL_USER;
+  if (!user) return null;
+  return `${getFromName()} <${user}>`;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -327,19 +332,23 @@ function renderOrderEmailText(order: OrderRequest, quote: Quote): string {
 //  送信ロジック
 // ──────────────────────────────────────────────────────────────
 
-let cachedClient: Resend | null = null;
-function getClient(): Resend | null {
-  if (cachedClient) return cachedClient;
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return null;
-  cachedClient = new Resend(apiKey);
-  return cachedClient;
+let cachedTransporter: Transporter | null = null;
+function getTransporter(): Transporter | null {
+  if (cachedTransporter) return cachedTransporter;
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
+  cachedTransporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+  return cachedTransporter;
 }
 
 /**
  * 発注通知メールを両方の担当者アドレスに送信
  *
- * 環境変数 RESEND_API_KEY が未設定の場合はスキップして警告ログのみ。
+ * 環境変数 GMAIL_USER / GMAIL_APP_PASSWORD が未設定の場合はスキップして警告ログのみ。
  * 送信失敗時もエラー内容を返すだけで、呼び出し元の処理は続行される想定
  * （顧客の発注体験を失敗させないため）。
  */
@@ -347,10 +356,11 @@ export async function sendOrderNotification(
   order: OrderRequest,
   quote: Quote
 ): Promise<EmailSendResult> {
-  const client = getClient();
-  if (!client) {
+  const transporter = getTransporter();
+  const from = getFromAddress();
+  if (!transporter || !from) {
     console.warn(
-      "[EMAIL] RESEND_API_KEY が未設定のためメール送信をスキップしました。",
+      "[EMAIL] GMAIL_USER / GMAIL_APP_PASSWORD が未設定のためメール送信をスキップしました。",
       { orderId: order.id }
     );
     return { ok: false, reason: "disabled" };
@@ -363,8 +373,8 @@ export async function sendOrderNotification(
   const text = renderOrderEmailText(order, quote);
 
   try {
-    const result = await client.emails.send({
-      from: getFromAddress(),
+    const info = await transporter.sendMail({
+      from,
       to: ORDER_NOTIFY_RECIPIENTS,
       replyTo: order.email,
       subject,
@@ -372,33 +382,18 @@ export async function sendOrderNotification(
       text,
     });
 
-    // Resend v6 は { data, error } の discriminated union を返す
-    const resultError = (result as { error?: unknown }).error;
-    if (resultError) {
-      const errMsg =
-        typeof resultError === "string"
-          ? resultError
-          : JSON.stringify(resultError);
-      console.error("[EMAIL] Resend returned error", {
-        orderId: order.id,
-        error: errMsg,
-      });
-      return { ok: false, reason: "error", error: errMsg };
-    }
-
-    const resendId =
-      (result as { data?: { id?: string } }).data?.id ?? "";
-
     console.log("[EMAIL] 発注通知メール送信成功", {
       orderId: order.id,
-      resendId,
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
       recipients: ORDER_NOTIFY_RECIPIENTS,
     });
 
-    return { ok: true, id: resendId };
+    return { ok: true, id: info.messageId || "" };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error("[EMAIL] Resend API 呼び出し失敗", {
+    console.error("[EMAIL] Gmail SMTP 送信失敗", {
       orderId: order.id,
       error: message,
     });
