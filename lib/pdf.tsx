@@ -1,13 +1,25 @@
 /**
- * PDF — 見積書 PDF 自動生成
+ * PDF — 見積書 PDF 自動生成（竹谷商事 正式フォーマット）
  *
- * @react-pdf/renderer を使い、Vercel Serverless Function 内で
- * 純 JavaScript のみで見積書 PDF を生成する。
+ * 竹谷商事の既存見積書（g:\マイドライブ\見積書発行.PDF）と同じ体裁で生成する。
  *
- * 既存の estimate-template.xlsx + LibreOffice 変換フローは Vercel では動かないため、
- * こちらで同等の見積書を直接 React コンポーネントとして組む。
+ * 特徴:
+ * - 発行元: 株式会社 竹谷商事（大阪市阿倍野区）
+ * - タイトル: 「御 見 積 書」罫線付き
+ * - 右上: 1ページ / 見積№ / 見積日付（令和年号）
+ * - 左: {会社名} 御中（下線付き）
+ * - 右: 竹谷商事住所＋TEL/FAX
+ * - 納期 / 納入場所 / 支払方法 / 有効期限 の4ラベル
+ * - 担当者: 宮本俊輔 + 印枠
+ * - 要件行
+ * - 合計金額 ￥XX,XXX-
+ * - 明細表: No./商品名/入数/個数/数量/単位/単価/金額/摘要（フル罫線、多数の空行）
+ * - 品番は商品名の上に括弧付き
+ * - 下部: 税率対象額 / 内消費税等 / (小計) の注記行
+ * - 末尾: 消費税・金額合計の大文字行
+ * - 右下: (見積№)
  *
- * 日本語フォント: lib/fonts/NotoSansJP.ttf を Font.register で登録
+ * 日本語フォント: lib/fonts/NotoSansJP.ttf
  */
 
 import {
@@ -20,12 +32,10 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 import path from "node:path";
-import React from "react";
-import { COLORS, formatJpy } from "./product-master";
 import type { Quote, OrderRequest } from "./order";
 
 // ──────────────────────────────────────────────────────────────
-//  フォント登録（Noto Sans JP）
+//  フォント登録
 // ──────────────────────────────────────────────────────────────
 
 let fontRegistered = false;
@@ -36,7 +46,6 @@ function ensureFontRegistered() {
     family: "NotoSansJP",
     src: fontPath,
   });
-  // 改行可能な文字クラスを広めに設定（日本語対応）
   Font.registerHyphenationCallback((word) => {
     if (word.length <= 1) return [word];
     return Array.from(word).flatMap((c, i) => (i === 0 ? [c] : ["", c]));
@@ -45,299 +54,491 @@ function ensureFontRegistered() {
 }
 
 // ──────────────────────────────────────────────────────────────
-//  スタイル
+//  竹谷商事 会社情報
+// ──────────────────────────────────────────────────────────────
+
+const VENDOR = {
+  name: "株式会社 竹谷商事",
+  zip: "〒545-0032",
+  address: "大阪市阿倍野区晴明通2-20",
+  tel: "TEL:06-6661-6946",
+  fax: "FAX:06-6661-7416",
+  salesRep: "宮本俊輔",
+};
+
+// ──────────────────────────────────────────────────────────────
+//  カラー（黒基調、モノクロ寄り）
 // ──────────────────────────────────────────────────────────────
 
 const COLOR = {
-  navy: "#1C3557",
-  navyDark: "#122340",
-  orange: "#E07B2A",
-  gray50: "#F9FAFB",
-  gray100: "#F5F6F8",
-  gray200: "#E5E7EB",
-  gray400: "#9CA3AF",
-  gray500: "#6B7280",
-  gray700: "#4B5563",
-  text: "#1A1F2B",
+  text: "#000000",
+  border: "#333333",
+  borderLight: "#555555",
+  muted: "#555555",
 };
+
+// ──────────────────────────────────────────────────────────────
+//  スタイル
+// ──────────────────────────────────────────────────────────────
+
+const BORDER = 0.7;
+const BORDER_LIGHT = 0.4;
 
 const styles = StyleSheet.create({
   page: {
     fontFamily: "NotoSansJP",
-    fontSize: 10,
-    color: COLOR.text,
-    paddingTop: 40,
-    paddingBottom: 50,
-    paddingHorizontal: 40,
-    lineHeight: 1.5,
-  },
-  // ヘッダー
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 24,
-    borderBottomWidth: 2,
-    borderBottomColor: COLOR.navy,
-    paddingBottom: 16,
-  },
-  titleBlock: {
-    flexDirection: "column",
-  },
-  titleBadge: {
     fontSize: 9,
-    color: COLOR.orange,
-    letterSpacing: 2,
-    marginBottom: 4,
+    color: COLOR.text,
+    paddingTop: 32,
+    paddingBottom: 36,
+    paddingHorizontal: 36,
+    lineHeight: 1.4,
   },
-  title: {
-    fontSize: 28,
-    color: COLOR.navy,
-    fontWeight: 700,
-    letterSpacing: 4,
-  },
-  metaBlock: {
+
+  // ── 上部メタ ──
+  topMeta: {
+    position: "absolute",
+    top: 32,
+    right: 36,
     alignItems: "flex-end",
   },
-  metaRow: {
-    flexDirection: "row",
-    marginBottom: 3,
-  },
-  metaLabel: {
+  topMetaPage: {
     fontSize: 9,
-    color: COLOR.gray500,
-    width: 64,
-    textAlign: "right",
-    marginRight: 8,
+    marginBottom: 2,
+    borderBottomWidth: BORDER_LIGHT,
+    borderBottomColor: COLOR.border,
+    paddingBottom: 1,
+    paddingHorizontal: 4,
   },
-  metaValue: {
-    fontSize: 10,
-    color: COLOR.navy,
-    fontWeight: 700,
-  },
-  // 宛先・自社
-  addressSection: {
+  topMetaRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 28,
+    marginBottom: 1,
   },
-  clientBlock: {
+  topMetaLabel: {
+    fontSize: 9,
+    width: 56,
+    textAlign: "right",
+    marginRight: 4,
+  },
+  topMetaValue: {
+    fontSize: 9,
+    minWidth: 120,
+    textAlign: "right",
+  },
+
+  // ── タイトル ──
+  titleWrap: {
+    alignItems: "center",
+    marginTop: 16,
+    marginBottom: 14,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 700,
+    letterSpacing: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 4,
+    borderTopWidth: BORDER,
+    borderBottomWidth: BORDER,
+    borderColor: COLOR.border,
+  },
+
+  // ── 宛先 / 自社 ──
+  topBlock: {
+    flexDirection: "row",
+    marginBottom: 10,
+  },
+  clientCol: {
+    width: "56%",
+    paddingRight: 10,
+  },
+  clientRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    borderBottomWidth: BORDER,
+    borderBottomColor: COLOR.border,
+    paddingBottom: 4,
+    marginBottom: 10,
+  },
+  clientName: {
+    fontSize: 14,
+    fontWeight: 700,
     flex: 1,
   },
-  clientCompany: {
-    fontSize: 16,
-    color: COLOR.navy,
+  clientSuffix: {
+    fontSize: 12,
     fontWeight: 700,
-    marginBottom: 2,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLOR.gray400,
-    paddingBottom: 4,
-    marginRight: 40,
   },
-  clientContact: {
-    fontSize: 10,
-    color: COLOR.gray700,
-    marginTop: 6,
+  vendorCol: {
+    width: "44%",
+    paddingLeft: 6,
   },
-  vendorBlock: {
-    width: 220,
+  vendorLine: {
+    fontSize: 9,
+    marginBottom: 1,
   },
   vendorName: {
     fontSize: 11,
-    color: COLOR.navy,
     fontWeight: 700,
-    marginBottom: 4,
-  },
-  vendorDetail: {
-    fontSize: 9,
-    color: COLOR.gray700,
+    marginTop: 1,
     marginBottom: 1,
   },
-  // 合計額セクション
-  totalSection: {
-    backgroundColor: COLOR.gray100,
-    borderWidth: 1,
-    borderColor: COLOR.gray200,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
+
+  // ── 導入文 ──
+  leadText: {
+    fontSize: 9,
+    marginBottom: 1,
+  },
+
+  // ── 納期・納入場所などのラベル行 ──
+  labelBlock: {
+    flexDirection: "row",
+    marginTop: 10,
+    marginBottom: 6,
+  },
+  labelLeftCol: {
+    width: "56%",
+    paddingRight: 10,
+  },
+  labelRow: {
+    flexDirection: "row",
+    borderBottomWidth: BORDER_LIGHT,
+    borderBottomColor: COLOR.border,
+    paddingVertical: 3,
+  },
+  labelName: {
+    fontSize: 9,
+    fontWeight: 700,
+    width: 64,
+  },
+  labelValue: {
+    fontSize: 9,
+    flex: 1,
+  },
+  labelRightCol: {
+    width: "44%",
+    paddingLeft: 6,
+  },
+  sealRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 6,
+  },
+  sealPersonWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    borderBottomWidth: BORDER_LIGHT,
+    borderBottomColor: COLOR.border,
+    paddingBottom: 2,
+    marginRight: 6,
+  },
+  sealLabel: {
+    fontSize: 9,
+    fontWeight: 700,
+    marginRight: 8,
+  },
+  sealName: {
+    fontSize: 11,
+    fontWeight: 700,
+  },
+  sealBox: {
+    width: 24,
+    height: 24,
+    borderWidth: BORDER_LIGHT,
+    borderColor: COLOR.border,
+    marginLeft: 3,
+  },
+
+  // ── 合計金額行 + 要件行 ──
+  totalAndRequirementBlock: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  totalCol: {
+    width: "50%",
+    paddingRight: 8,
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   totalLabel: {
     fontSize: 11,
-    color: COLOR.gray500,
-    marginRight: 16,
-    letterSpacing: 1,
+    fontWeight: 700,
+    marginRight: 8,
   },
   totalValue: {
-    fontSize: 22,
-    color: COLOR.orange,
+    fontSize: 16,
     fontWeight: 700,
   },
-  totalSuffix: {
-    fontSize: 10,
-    color: COLOR.gray500,
-    marginLeft: 8,
-  },
-  // 明細表
-  table: {
-    borderTopWidth: 2,
-    borderTopColor: COLOR.navy,
-    marginBottom: 14,
-  },
-  tableHead: {
+  requirementCol: {
+    width: "50%",
     flexDirection: "row",
-    backgroundColor: COLOR.gray50,
-    borderBottomWidth: 1,
-    borderBottomColor: COLOR.gray200,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
+    paddingLeft: 6,
   },
-  tableHeadText: {
+  requirementLabel: {
     fontSize: 9,
-    color: COLOR.gray500,
-    letterSpacing: 0.5,
+    fontWeight: 700,
+    marginRight: 6,
+  },
+  requirementValue: {
+    fontSize: 9,
+    flex: 1,
+  },
+
+  // ── 明細表 ──
+  table: {
+    marginTop: 8,
+    borderTopWidth: BORDER,
+    borderLeftWidth: BORDER,
+    borderRightWidth: BORDER,
+    borderColor: COLOR.border,
+  },
+  tableHead1: {
+    flexDirection: "row",
+    borderBottomWidth: BORDER_LIGHT,
+    borderBottomColor: COLOR.border,
+    paddingVertical: 1,
+    minHeight: 12,
+  },
+  tableHead2: {
+    flexDirection: "row",
+    borderBottomWidth: BORDER,
+    borderBottomColor: COLOR.border,
+    paddingVertical: 2,
+    minHeight: 14,
   },
   tableRow: {
     flexDirection: "row",
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLOR.gray200,
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-    minHeight: 24,
+    borderBottomWidth: BORDER_LIGHT,
+    borderBottomColor: COLOR.border,
+    minHeight: 20,
   },
-  colProduct: { width: "44%", paddingRight: 6 },
-  colColor: { width: "14%", paddingRight: 6 },
-  colUnit: { width: "16%", paddingRight: 6, textAlign: "right" },
-  colQty: { width: "10%", paddingRight: 6, textAlign: "right" },
-  colSubtotal: { width: "16%", textAlign: "right" },
-  cellText: {
-    fontSize: 10,
-    color: COLOR.text,
-  },
-  cellSmall: {
-    fontSize: 8,
-    color: COLOR.gray500,
-    marginTop: 2,
-  },
-  // 合計内訳
-  summaryBlock: {
+  tableEmptyRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 4,
-    marginBottom: 18,
+    borderBottomWidth: BORDER_LIGHT,
+    borderBottomColor: COLOR.border,
+    minHeight: 15,
   },
-  summaryTable: {
-    width: 220,
+  // 列定義（幅％）: No. 5 / 商品名 34 / 入数 8 / 個数 8 / 数量 8 / 単位 6 / 単価 12 / 金額 12 / 摘要 7
+  colNo: {
+    width: "5%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 2,
+    textAlign: "right",
   },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+  colName: {
+    width: "34%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 4,
   },
-  summaryLabel: {
-    fontSize: 10,
-    color: COLOR.gray500,
+  colIrisuu: {
+    width: "8%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 2,
+    textAlign: "right",
   },
-  summaryValue: {
-    fontSize: 11,
-    color: COLOR.navy,
-    fontWeight: 700,
+  colKosuu: {
+    width: "8%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 2,
+    textAlign: "right",
   },
-  summaryTotalRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderTopWidth: 2,
-    borderTopColor: COLOR.navy,
-    marginTop: 4,
+  colQty: {
+    width: "8%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 2,
+    textAlign: "right",
   },
-  summaryTotalLabel: {
-    fontSize: 11,
-    color: COLOR.orange,
-    fontWeight: 700,
-  },
-  summaryTotalValue: {
-    fontSize: 14,
-    color: COLOR.orange,
-    fontWeight: 700,
-  },
-  // 備考
-  notesBlock: {
-    marginTop: 10,
-    marginBottom: 14,
-    padding: 12,
-    backgroundColor: COLOR.gray50,
-    borderLeftWidth: 3,
-    borderLeftColor: COLOR.orange,
-  },
-  notesLabel: {
-    fontSize: 9,
-    color: COLOR.gray500,
-    marginBottom: 4,
-    letterSpacing: 1,
-  },
-  notesText: {
-    fontSize: 10,
-    color: COLOR.text,
-    lineHeight: 1.6,
-  },
-  // 有効期限・バッジ
-  validUntilRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  validUntilLabel: {
-    fontSize: 9,
-    color: COLOR.gray500,
-    marginRight: 8,
-  },
-  validUntilValue: {
-    fontSize: 10,
-    color: COLOR.navy,
-    fontWeight: 700,
-  },
-  specialBadge: {
-    marginTop: 8,
-    padding: 8,
-    backgroundColor: "#FEF3E9",
-    borderLeftWidth: 3,
-    borderLeftColor: COLOR.orange,
-  },
-  specialBadgeText: {
-    fontSize: 10,
-    color: "#9A4F10",
-  },
-  // フッター
-  footer: {
-    position: "absolute",
-    bottom: 24,
-    left: 40,
-    right: 40,
+  colUnit: {
+    width: "6%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 2,
     textAlign: "center",
+  },
+  colUnitPrice: {
+    width: "12%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 3,
+    textAlign: "right",
+  },
+  colAmount: {
+    width: "12%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingHorizontal: 3,
+    textAlign: "right",
+  },
+  colNote: {
+    width: "7%",
+    paddingHorizontal: 2,
+  },
+  headCell: {
     fontSize: 8,
-    color: COLOR.gray400,
-    borderTopWidth: 0.5,
-    borderTopColor: COLOR.gray200,
-    paddingTop: 8,
+    paddingVertical: 2,
+    textAlign: "center",
+  },
+  headCellSmall: {
+    fontSize: 7.5,
+    paddingVertical: 0,
+    textAlign: "center",
+  },
+  cellText: {
+    fontSize: 9,
+    paddingTop: 9,
+  },
+  cellProductCode: {
+    fontSize: 7.5,
+    color: COLOR.muted,
+    paddingTop: 2,
+    marginBottom: -1,
+  },
+  cellProductName: {
+    fontSize: 9,
+  },
+
+  // ── 合計内訳（明細表内の右下） ──
+  taxNoteRow: {
+    flexDirection: "row",
+    minHeight: 14,
+  },
+  taxNoteInner: {
+    flex: 1,
+    paddingHorizontal: 4,
+    fontSize: 8,
+    color: COLOR.muted,
+    paddingTop: 2,
+  },
+  summaryInTableRow: {
+    flexDirection: "row",
+    borderTopWidth: BORDER_LIGHT,
+    borderTopColor: COLOR.border,
+    minHeight: 13,
+  },
+  summaryInTableLabel: {
+    fontSize: 8,
+    textAlign: "right",
+    paddingRight: 4,
+    paddingTop: 2,
+    color: COLOR.muted,
+  },
+  summaryInTableValue: {
+    fontSize: 9,
+    textAlign: "right",
+    paddingRight: 3,
+    paddingTop: 2,
+    fontWeight: 700,
+  },
+
+  // ── 下部: 消費税・金額合計 ──
+  bottomSummary: {
+    borderLeftWidth: BORDER,
+    borderRightWidth: BORDER,
+    borderBottomWidth: BORDER,
+    borderColor: COLOR.border,
+  },
+  bottomSummaryRow: {
+    flexDirection: "row",
+  },
+  bottomSummaryRowDivider: {
+    flexDirection: "row",
+    borderTopWidth: BORDER_LIGHT,
+    borderTopColor: COLOR.border,
+  },
+  bottomSummaryLabelCol: {
+    width: "45%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingVertical: 3,
+    paddingHorizontal: 4,
+  },
+  bottomSummaryLabelText: {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: 4,
+    textAlign: "center",
+  },
+  bottomSummaryEmptyCols: {
+    width: "32%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+  },
+  bottomSummaryAmountCol: {
+    width: "16%",
+    borderRightWidth: BORDER_LIGHT,
+    borderRightColor: COLOR.border,
+    paddingVertical: 3,
+    paddingHorizontal: 3,
+    textAlign: "right",
+  },
+  bottomSummaryAmountText: {
+    fontSize: 10,
+    fontWeight: 700,
+  },
+  bottomSummaryNoteCol: {
+    width: "7%",
+  },
+
+  // ── フッター（右下、見積№再掲） ──
+  footerRef: {
+    position: "absolute",
+    bottom: 18,
+    right: 36,
+    fontSize: 9,
+    color: COLOR.muted,
   },
 });
 
 // ──────────────────────────────────────────────────────────────
-//  日付フォーマット
+//  日付フォーマット（令和年号）
 // ──────────────────────────────────────────────────────────────
 
-function formatDateJP(iso: string): string {
+function formatReiwa(iso: string): string {
   const d = new Date(iso);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}年${m}月${day}日`;
+  const reiwaYear = d.getFullYear() - 2018;
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const yearStr = reiwaYear === 1 ? "元" : String(reiwaYear);
+  return `令和 ${yearStr}年 ${month}月${day}日`;
+}
+
+/** 半角数字を全角へ */
+function toFullWidth(s: string): string {
+  return s
+    .replace(/[0-9]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0))
+    .replace(/,/g, "，")
+    .replace(/\./g, "．")
+    .replace(/-/g, "－");
+}
+
+/** 合計金額の表示形式: ￥５４，５９８－ (全角) */
+function formatAmountDash(value: number): string {
+  return `￥${toFullWidth(value.toLocaleString("ja-JP"))}－`;
+}
+
+/** 数値を右寄せ 3桁区切り */
+function fmt(value: number): string {
+  return value.toLocaleString("ja-JP");
+}
+
+// ──────────────────────────────────────────────────────────────
+//  見積№ 生成（最大5文字の短縮形）
+// ──────────────────────────────────────────────────────────────
+
+function toQuoteNumber(orderId: string): string {
+  // ORD-20260411-220000-9891 → 末尾の乱数部分を使う
+  const parts = orderId.split("-");
+  const last = parts[parts.length - 1] || orderId;
+  return last.slice(-5);
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -349,187 +550,296 @@ type Props = {
   quote: Quote;
 };
 
+const MAX_ROWS = 16; // 明細の最大行数（空行含む）
+
 function EstimateDocument({ order, quote }: Props) {
-  const isSpecial = quote.priceTier === "special";
+  const lines = quote.lines;
+  const displayLines = lines.slice(0, MAX_ROWS - 2); // 「送料」行と税計行の余裕
+  const emptyRows = Math.max(0, MAX_ROWS - displayLines.length);
+
+  const quoteNo = toQuoteNumber(quote.id);
+  const issueDate = formatReiwa(quote.issuedAt);
+
+  // 要件
+  const requirement = `識別テープ発注 ${order.contactName}様`;
 
   return (
     <Document
-      title={`見積書 ${quote.id}`}
-      author="株式会社竹谷商事"
-      subject={`${order.companyName} 様 見積書`}
+      title={`御見積書 ${quote.id}`}
+      author={VENDOR.name}
+      subject={`${order.companyName} 様 御見積書`}
     >
       <Page size="A4" style={styles.page}>
-        {/* ヘッダー */}
-        <View style={styles.header}>
-          <View style={styles.titleBlock}>
-            <Text style={styles.titleBadge}>ESTIMATE</Text>
-            <Text style={styles.title}>御 見 積 書</Text>
+        {/* 右上: 1ページ / 見積№ / 見積日付 */}
+        <View style={styles.topMeta}>
+          <Text style={styles.topMetaPage}>1ページ</Text>
+          <View style={styles.topMetaRow}>
+            <Text style={styles.topMetaLabel}>見積№</Text>
+            <Text style={styles.topMetaValue}>{quoteNo}</Text>
           </View>
-          <View style={styles.metaBlock}>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>発行日</Text>
-              <Text style={styles.metaValue}>{formatDateJP(quote.issuedAt)}</Text>
+          <View style={styles.topMetaRow}>
+            <Text style={styles.topMetaLabel}>見積日付</Text>
+            <Text style={styles.topMetaValue}>{issueDate}</Text>
+          </View>
+        </View>
+
+        {/* タイトル */}
+        <View style={styles.titleWrap}>
+          <Text style={styles.title}>御 見 積 書</Text>
+        </View>
+
+        {/* 宛先 / 自社ブロック */}
+        <View style={styles.topBlock}>
+          <View style={styles.clientCol}>
+            <View style={styles.clientRow}>
+              <Text style={styles.clientName}>{order.companyName}</Text>
+              <Text style={styles.clientSuffix}>御中</Text>
             </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>見積番号</Text>
-              <Text style={styles.metaValue}>{quote.id}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>有効期限</Text>
-              <Text style={styles.metaValue}>
-                {formatDateJP(quote.validUntil)}
+            <Text style={styles.leadText}>下記の通りお見積致します</Text>
+            <Text style={styles.leadText}>ご検討の程よろしくお願い致します</Text>
+          </View>
+          <View style={styles.vendorCol}>
+            <Text style={styles.vendorLine}>{VENDOR.zip}</Text>
+            <Text style={styles.vendorLine}>{VENDOR.address}</Text>
+            <Text style={styles.vendorName}>{VENDOR.name}</Text>
+            <Text style={styles.vendorLine}>{VENDOR.tel}</Text>
+            <Text style={styles.vendorLine}>{VENDOR.fax}</Text>
+          </View>
+        </View>
+
+        {/* 納期 / 納入場所 / 支払方法 / 有効期限 + 担当者 */}
+        <View style={styles.labelBlock}>
+          <View style={styles.labelLeftCol}>
+            <View style={styles.labelRow}>
+              <Text style={styles.labelName}>納期：</Text>
+              <Text style={styles.labelValue}>
+                {order.desiredDelivery || "受注後10日程度"}
               </Text>
             </View>
+            <View style={styles.labelRow}>
+              <Text style={styles.labelName}>納入場所：</Text>
+              <Text style={styles.labelValue}>
+                {order.shippingAddress
+                  ? `${order.zipCode ? `〒${order.zipCode} ` : ""}${order.shippingAddress}`
+                  : ""}
+              </Text>
+            </View>
+            <View style={styles.labelRow}>
+              <Text style={styles.labelName}>支払方法：</Text>
+              <Text style={styles.labelValue}>通常通り</Text>
+            </View>
+            <View style={styles.labelRow}>
+              <Text style={styles.labelName}>有効期限：</Text>
+              <Text style={styles.labelValue}>見積日より1ヶ月</Text>
+            </View>
+          </View>
+          <View style={styles.labelRightCol}>
+            <View style={styles.sealRow}>
+              <View style={styles.sealPersonWrap}>
+                <Text style={styles.sealLabel}>担当者：</Text>
+                <Text style={styles.sealName}>{VENDOR.salesRep}</Text>
+              </View>
+              <View style={styles.sealBox} />
+              <View style={styles.sealBox} />
+            </View>
           </View>
         </View>
 
-        {/* 宛先・自社 */}
-        <View style={styles.addressSection}>
-          <View style={styles.clientBlock}>
-            <Text style={styles.clientCompany}>
-              {order.companyName} 御中
-            </Text>
-            <Text style={styles.clientContact}>ご担当: {order.contactName} 様</Text>
-            <Text style={{ ...styles.clientContact, marginTop: 2 }}>
-              下記の通りお見積もり申し上げます。
-            </Text>
+        {/* 合計金額 + 要件 */}
+        <View style={styles.totalAndRequirementBlock}>
+          <View style={styles.totalCol}>
+            <Text style={styles.totalLabel}>合計金額</Text>
+            <Text style={styles.totalValue}>{formatAmountDash(quote.total)}</Text>
           </View>
-          <View style={styles.vendorBlock}>
-            <Text style={styles.vendorName}>株式会社 竹谷商事</Text>
-            <Text style={styles.vendorDetail}>
-              森林・測量用 識別テープ専門
-            </Text>
-            <Text style={styles.vendorDetail}>
-              担当: 宮本 俊輔
-            </Text>
-            <Text style={styles.vendorDetail}>
-              Email: s_miyamoto@greensprout0315.com
-            </Text>
-            <Text style={styles.vendorDetail}>
-              takeya-tape-shop.vercel.app
-            </Text>
+          <View style={styles.requirementCol}>
+            <Text style={styles.requirementLabel}>要 件：</Text>
+            <Text style={styles.requirementValue}>{requirement}</Text>
           </View>
-        </View>
-
-        {/* 合計額ハイライト */}
-        <View style={styles.totalSection}>
-          <Text style={styles.totalLabel}>御見積金額</Text>
-          <Text style={styles.totalValue}>{formatJpy(quote.total)}</Text>
-          <Text style={styles.totalSuffix}>（税込）</Text>
         </View>
 
         {/* 明細表 */}
         <View style={styles.table}>
-          <View style={styles.tableHead}>
-            <Text style={{ ...styles.tableHeadText, ...styles.colProduct }}>
-              商 品
-            </Text>
-            <Text style={{ ...styles.tableHeadText, ...styles.colColor }}>
-              色
-            </Text>
-            <Text style={{ ...styles.tableHeadText, ...styles.colUnit }}>
-              単価
-            </Text>
-            <Text style={{ ...styles.tableHeadText, ...styles.colQty }}>
-              数量
-            </Text>
-            <Text style={{ ...styles.tableHeadText, ...styles.colSubtotal }}>
-              小計
-            </Text>
+          {/* ヘッダー1: 入数/個数 ラベル（該当列の上に配置） */}
+          <View style={styles.tableHead1}>
+            <View style={styles.colNo} />
+            <View style={styles.colName} />
+            <View style={styles.colIrisuu}>
+              <Text style={styles.headCellSmall}>入 数</Text>
+            </View>
+            <View style={styles.colKosuu}>
+              <Text style={styles.headCellSmall}>個 数</Text>
+            </View>
+            <View style={styles.colQty} />
+            <View style={styles.colUnit} />
+            <View style={styles.colUnitPrice} />
+            <View style={styles.colAmount} />
+            <View style={styles.colNote} />
           </View>
-          {quote.lines.map((line, i) => {
-            const color = COLORS[line.colorId];
+          {/* ヘッダー2: No./商品名/数量/単位/単価/金額/摘要 */}
+          <View style={styles.tableHead2}>
+            <View style={styles.colNo}>
+              <Text style={styles.headCell}>№</Text>
+            </View>
+            <View style={styles.colName}>
+              <Text style={styles.headCell}>商  品  名</Text>
+            </View>
+            <View style={styles.colIrisuu}>
+              <Text style={styles.headCellSmall}> </Text>
+            </View>
+            <View style={styles.colKosuu}>
+              <Text style={styles.headCellSmall}> </Text>
+            </View>
+            <View style={styles.colQty}>
+              <Text style={styles.headCell}>数 量</Text>
+            </View>
+            <View style={styles.colUnit}>
+              <Text style={styles.headCell}>単位</Text>
+            </View>
+            <View style={styles.colUnitPrice}>
+              <Text style={styles.headCell}>単   価</Text>
+            </View>
+            <View style={styles.colAmount}>
+              <Text style={styles.headCell}>金   額</Text>
+            </View>
+            <View style={styles.colNote}>
+              <Text style={styles.headCell}>摘要</Text>
+            </View>
+          </View>
+
+          {/* 冒頭: 見積№再掲 */}
+          <View style={styles.tableRow}>
+            <View style={styles.colNo} />
+            <View style={styles.colName}>
+              <Text style={styles.cellProductCode}>( {quoteNo})</Text>
+            </View>
+            <View style={styles.colIrisuu} />
+            <View style={styles.colKosuu} />
+            <View style={styles.colQty} />
+            <View style={styles.colUnit} />
+            <View style={styles.colUnitPrice} />
+            <View style={styles.colAmount} />
+            <View style={styles.colNote} />
+          </View>
+
+          {/* 明細行 */}
+          {displayLines.map((line, i) => {
+            // 品番（specId を略号化）: std-008-30-50__pink → STP008-30-50-P
+            const code = makeProductCode(line.specId, line.colorId);
             return (
               <View key={i} style={styles.tableRow}>
-                <View style={styles.colProduct}>
-                  <Text style={styles.cellText}>{line.productName}</Text>
+                <View style={styles.colNo}>
+                  <Text style={styles.cellText}>{i + 1}</Text>
                 </View>
-                <View style={styles.colColor}>
-                  <Text style={styles.cellText}>
-                    {color?.name ?? line.colorName}
+                <View style={styles.colName}>
+                  <Text style={styles.cellProductCode}>({code})</Text>
+                  <Text style={styles.cellProductName}>
+                    {line.productName} {line.colorName}
                   </Text>
                 </View>
-                <Text style={{ ...styles.cellText, ...styles.colUnit }}>
-                  {formatJpy(line.unitPrice)}
-                </Text>
-                <Text style={{ ...styles.cellText, ...styles.colQty }}>
-                  {line.quantity}本
-                </Text>
-                <Text
-                  style={{
-                    ...styles.cellText,
-                    ...styles.colSubtotal,
-                    fontWeight: 700,
-                  }}
-                >
-                  {formatJpy(line.subtotal)}
-                </Text>
+                <View style={styles.colIrisuu} />
+                <View style={styles.colKosuu} />
+                <View style={styles.colQty}>
+                  <Text style={styles.cellText}>{fmt(line.quantity)}</Text>
+                </View>
+                <View style={styles.colUnit}>
+                  <Text style={styles.cellText}>巻</Text>
+                </View>
+                <View style={styles.colUnitPrice}>
+                  <Text style={styles.cellText}>
+                    {line.unitPrice.toFixed(1)}
+                  </Text>
+                </View>
+                <View style={styles.colAmount}>
+                  <Text style={styles.cellText}>{fmt(line.subtotal)}</Text>
+                </View>
+                <View style={styles.colNote} />
               </View>
             );
           })}
+
+          {/* 税注記行（表内右下） */}
+          <View style={styles.taxNoteRow}>
+            <View style={{ width: "5%" }} />
+            <View style={{ width: "34%" }}>
+              <Text style={styles.taxNoteInner}>
+                (税率10.00%計 対象額 {fmt(quote.subtotal)})
+              </Text>
+            </View>
+            <View style={{ width: "30%" }} />
+            <View style={{ width: "12%" }}>
+              <Text style={{ ...styles.summaryInTableLabel, paddingTop: 2 }}>
+                (内消費税等)
+              </Text>
+            </View>
+            <View style={{ width: "12%" }}>
+              <Text style={{ ...styles.summaryInTableValue, paddingTop: 2 }}>
+                {fmt(quote.tax)}
+              </Text>
+            </View>
+            <View style={{ width: "7%" }} />
+          </View>
+          <View style={styles.summaryInTableRow}>
+            <View style={{ width: "5%" }} />
+            <View style={{ width: "34%" }} />
+            <View style={{ width: "30%" }} />
+            <View style={{ width: "12%" }}>
+              <Text style={styles.summaryInTableLabel}>(小  計)</Text>
+            </View>
+            <View style={{ width: "12%" }}>
+              <Text style={styles.summaryInTableValue}>{fmt(quote.total)}</Text>
+            </View>
+            <View style={{ width: "7%" }} />
+          </View>
+
+          {/* 空行でページを埋める（税注記2行分を差し引く） */}
+          {Array.from({
+            length: Math.max(0, MAX_ROWS - displayLines.length - 3),
+          }).map((_, i) => (
+            <View key={`empty-${i}`} style={styles.tableEmptyRow}>
+              <View style={styles.colNo} />
+              <View style={styles.colName} />
+              <View style={styles.colIrisuu} />
+              <View style={styles.colKosuu} />
+              <View style={styles.colQty} />
+              <View style={styles.colUnit} />
+              <View style={styles.colUnitPrice} />
+              <View style={styles.colAmount} />
+              <View style={styles.colNote} />
+            </View>
+          ))}
         </View>
 
-        {/* 合計内訳 */}
-        <View style={styles.summaryBlock}>
-          <View style={styles.summaryTable}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>小計（税抜）</Text>
-              <Text style={styles.summaryValue}>
-                {formatJpy(quote.subtotal)}
+        {/* 下部: 消費税・金額合計 */}
+        <View style={styles.bottomSummary}>
+          <View style={styles.bottomSummaryRow}>
+            <View style={styles.bottomSummaryLabelCol}>
+              <Text style={styles.bottomSummaryLabelText}>消 費 税</Text>
+            </View>
+            <View style={styles.bottomSummaryEmptyCols} />
+            <View style={styles.bottomSummaryAmountCol}>
+              <Text style={styles.bottomSummaryAmountText}>
+                {fmt(quote.tax)}
               </Text>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>
-                消費税（{Math.round(quote.taxRate * 100)}%）
-              </Text>
-              <Text style={styles.summaryValue}>{formatJpy(quote.tax)}</Text>
+            <View style={styles.bottomSummaryNoteCol} />
+          </View>
+          <View style={styles.bottomSummaryRowDivider}>
+            <View style={styles.bottomSummaryLabelCol}>
+              <Text style={styles.bottomSummaryLabelText}>金 額 合 計</Text>
             </View>
-            <View style={styles.summaryTotalRow}>
-              <Text style={styles.summaryTotalLabel}>合計金額（税込）</Text>
-              <Text style={styles.summaryTotalValue}>
-                {formatJpy(quote.total)}
+            <View style={styles.bottomSummaryEmptyCols} />
+            <View style={styles.bottomSummaryAmountCol}>
+              <Text style={styles.bottomSummaryAmountText}>
+                {fmt(quote.total)}
               </Text>
             </View>
+            <View style={styles.bottomSummaryNoteCol} />
           </View>
         </View>
 
-        {/* 特別価格バッジ */}
-        {isSpecial && (
-          <View style={styles.specialBadge}>
-            <Text style={styles.specialBadgeText}>
-              ✓ 特別価格を適用させていただきました（ID: {quote.customerId}）
-            </Text>
-          </View>
-        )}
-
-        {/* 備考 */}
-        {order.notes && (
-          <View style={styles.notesBlock}>
-            <Text style={styles.notesLabel}>備 考</Text>
-            <Text style={styles.notesText}>{order.notes}</Text>
-          </View>
-        )}
-
-        {/* 納品先情報（ある場合） */}
-        {(order.shippingAddress || order.desiredDelivery) && (
-          <View style={{ marginTop: 8 }}>
-            {order.desiredDelivery && (
-              <Text style={{ fontSize: 10, color: COLOR.gray700, marginBottom: 2 }}>
-                希望納期: {order.desiredDelivery}
-              </Text>
-            )}
-            {order.shippingAddress && (
-              <Text style={{ fontSize: 10, color: COLOR.gray700 }}>
-                納品先: {order.zipCode ?? ""} {order.shippingAddress}
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* フッター */}
-        <Text style={styles.footer} fixed>
-          本見積書は takeya-tape-shop.vercel.app の発注フォームから自動生成されています。
-          ご不明な点は s_miyamoto@greensprout0315.com までお問い合わせください。
+        {/* 右下に見積№再掲 */}
+        <Text style={styles.footerRef} fixed>
+          ( {quoteNo})
         </Text>
       </Page>
     </Document>
@@ -537,15 +847,46 @@ function EstimateDocument({ order, quote }: Props) {
 }
 
 // ──────────────────────────────────────────────────────────────
+//  品番生成: spec ID + color ID から短縮コード
+// ──────────────────────────────────────────────────────────────
+
+function makeProductCode(specId: string, colorId: string): string {
+  // std-008-30-50 → STP008-30-50
+  // num-015-20-50 → NUM015-20-50
+  // dia-01-30-50 → DIA01-30-50
+  let prefix = "TAP";
+  let rest = specId;
+  if (specId.startsWith("std-")) {
+    prefix = "STP";
+    rest = specId.slice(4);
+  } else if (specId.startsWith("num-")) {
+    prefix = "NUM";
+    rest = specId.slice(4);
+  } else if (specId.startsWith("dia-")) {
+    prefix = "DIA";
+    rest = specId.slice(4);
+  }
+  // 色コード（頭文字大文字）
+  const colorChar: Record<string, string> = {
+    pink: "P",
+    white: "W",
+    blue: "B",
+    red: "R",
+    yellow: "Y",
+    orange: "O",
+    green: "G",
+    "pink-blue": "PB",
+    "yellow-black": "YK",
+    "pink-white": "PW",
+  };
+  const cc = colorChar[colorId] || "X";
+  return `${prefix}${rest}-${cc}`;
+}
+
+// ──────────────────────────────────────────────────────────────
 //  公開 API
 // ──────────────────────────────────────────────────────────────
 
-/**
- * 見積書 PDF をバッファで生成
- *
- * Vercel Serverless Function 内で純 JavaScript のみで実行される。
- * 生成失敗時は例外を投げる。
- */
 export async function generateEstimatePdf(
   order: OrderRequest,
   quote: Quote
@@ -557,7 +898,6 @@ export async function generateEstimatePdf(
   return buffer as Buffer;
 }
 
-/** PDF ファイル名（UIと統一） */
 export function generatePdfFilename(quoteId: string): string {
   return `見積書_${quoteId}.pdf`;
 }
