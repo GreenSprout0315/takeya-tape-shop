@@ -92,18 +92,37 @@ export async function POST(request: Request) {
       JSON.stringify({ requestId, orderRequest, quote }, null, 2)
     );
 
-    // 発注通知メール送信（Resend 経由）
-    //  - s_miyamoto@greensprout0315.com
-    //  - maki_kumabe@taketani.co.jp
-    // 失敗しても API レスポンスは成功として返す（顧客体験を壊さないため）
+    // 発注通知メール送信（Gmail SMTP 経由、社内通知＋お客様受付確認を並列送信）
+    //  社内宛: s_miyamoto@greensprout0315.com, maki_kumabe@taketani.co.jp
+    //  お客様宛: order.email
+    // どちらかが失敗してもAPIレスポンスは成功として返す（顧客体験を壊さないため）
     const emailResult = await sendOrderNotification(orderRequest, quote);
     if (!emailResult.ok) {
-      console.warn("[ORDER] email dispatch skipped or failed", {
+      console.warn("[ORDER] email dispatch disabled (env vars missing)", {
         requestId,
         id,
-        reason: emailResult.reason,
-        error: "error" in emailResult ? emailResult.error : undefined,
       });
+    } else {
+      if (!emailResult.internal.ok) {
+        console.warn("[ORDER] 社内通知メール送信失敗", {
+          requestId,
+          id,
+          error:
+            "error" in emailResult.internal
+              ? emailResult.internal.error
+              : undefined,
+        });
+      }
+      if (!emailResult.customer.ok) {
+        console.warn("[ORDER] 顧客受付確認メール送信失敗", {
+          requestId,
+          id,
+          error:
+            "error" in emailResult.customer
+              ? emailResult.customer.error
+              : undefined,
+        });
+      }
     }
 
     // TODO Phase C: Neon Postgres に永続化
@@ -112,7 +131,11 @@ export async function POST(request: Request) {
       ok: true,
       id,
       quote,
-      emailSent: emailResult.ok,
+      emailSent:
+        emailResult.ok &&
+        (emailResult.internal.ok || emailResult.customer.ok),
+      internalSent: emailResult.ok && emailResult.internal.ok,
+      customerSent: emailResult.ok && emailResult.customer.ok,
     });
   } catch (error) {
     console.error("[ORDER] unexpected error", {
