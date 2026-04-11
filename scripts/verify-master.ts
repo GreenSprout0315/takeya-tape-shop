@@ -11,13 +11,13 @@ import {
   CATEGORY_META,
   getFeaturedSpecs,
   formatJpy,
-} from "../lib/product-master.ts";
+} from "../lib/product-master";
 import {
   CUSTOMERS,
   getSpecialCustomers,
   findCustomerByName,
   getCustomerPrice,
-} from "../lib/customer-master.ts";
+} from "../lib/customer-master";
 import {
   buildQuote,
   generateOrderId,
@@ -25,7 +25,7 @@ import {
   TAX_RATE,
   formatQuoteTotal,
   type OrderRequest,
-} from "../lib/order.ts";
+} from "../lib/order";
 
 console.log("=== 商品マスター統計 ===");
 console.log(`  識別テープ(標準)    : ${STANDARD_TAPES.length} spec`);
