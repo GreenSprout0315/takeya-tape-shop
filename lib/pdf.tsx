@@ -105,10 +105,6 @@ const styles = StyleSheet.create({
   topMetaPage: {
     fontSize: 9,
     marginBottom: 2,
-    borderBottomWidth: BORDER_LIGHT,
-    borderBottomColor: COLOR.border,
-    paddingBottom: 1,
-    paddingHorizontal: 4,
   },
   topMetaRow: {
     flexDirection: "row",
@@ -130,17 +126,13 @@ const styles = StyleSheet.create({
   titleWrap: {
     alignItems: "center",
     marginTop: 16,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   title: {
     fontSize: 22,
     fontWeight: 700,
     letterSpacing: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 4,
-    borderTopWidth: BORDER,
-    borderBottomWidth: BORDER,
-    borderColor: COLOR.border,
+    textAlign: "center",
   },
 
   // ── 宛先 / 自社 ──
@@ -407,36 +399,25 @@ const styles = StyleSheet.create({
   },
 
   // ── 合計内訳（明細表内の右下） ──
-  taxNoteRow: {
-    flexDirection: "row",
-    minHeight: 14,
-  },
-  taxNoteInner: {
-    flex: 1,
-    paddingHorizontal: 4,
+  cellNoteText: {
     fontSize: 8,
     color: COLOR.muted,
-    paddingTop: 2,
+    paddingTop: 3,
+    paddingLeft: 2,
   },
-  summaryInTableRow: {
-    flexDirection: "row",
-    borderTopWidth: BORDER_LIGHT,
-    borderTopColor: COLOR.border,
-    minHeight: 13,
-  },
-  summaryInTableLabel: {
+  cellSummaryLabel: {
     fontSize: 8,
-    textAlign: "right",
-    paddingRight: 4,
-    paddingTop: 2,
     color: COLOR.muted,
-  },
-  summaryInTableValue: {
-    fontSize: 9,
+    paddingTop: 3,
     textAlign: "right",
     paddingRight: 3,
-    paddingTop: 2,
+  },
+  cellSummaryValue: {
+    fontSize: 9,
     fontWeight: 700,
+    paddingTop: 3,
+    textAlign: "right",
+    paddingRight: 3,
   },
 
   // ── 下部: 消費税・金額合計 ──
@@ -757,38 +738,41 @@ function EstimateDocument({ order, quote }: Props) {
             );
           })}
 
-          {/* 税注記行（表内右下） */}
-          <View style={styles.taxNoteRow}>
-            <View style={{ width: "5%" }} />
-            <View style={{ width: "34%" }}>
-              <Text style={styles.taxNoteInner}>
+          {/* 税注記行 + (内消費税等) */}
+          <View style={styles.tableEmptyRow}>
+            <View style={styles.colNo} />
+            <View style={styles.colName}>
+              <Text style={styles.cellNoteText}>
                 (税率10.00%計 対象額 {fmt(quote.subtotal)})
               </Text>
             </View>
-            <View style={{ width: "30%" }} />
-            <View style={{ width: "12%" }}>
-              <Text style={{ ...styles.summaryInTableLabel, paddingTop: 2 }}>
-                (内消費税等)
-              </Text>
+            <View style={styles.colIrisuu} />
+            <View style={styles.colKosuu} />
+            <View style={styles.colQty} />
+            <View style={styles.colUnit} />
+            <View style={styles.colUnitPrice}>
+              <Text style={styles.cellSummaryLabel}>(内消費税等)</Text>
             </View>
-            <View style={{ width: "12%" }}>
-              <Text style={{ ...styles.summaryInTableValue, paddingTop: 2 }}>
-                {fmt(quote.tax)}
-              </Text>
+            <View style={styles.colAmount}>
+              <Text style={styles.cellSummaryValue}>{fmt(quote.tax)}</Text>
             </View>
-            <View style={{ width: "7%" }} />
+            <View style={styles.colNote} />
           </View>
-          <View style={styles.summaryInTableRow}>
-            <View style={{ width: "5%" }} />
-            <View style={{ width: "34%" }} />
-            <View style={{ width: "30%" }} />
-            <View style={{ width: "12%" }}>
-              <Text style={styles.summaryInTableLabel}>(小  計)</Text>
+          {/* 小計行 */}
+          <View style={styles.tableEmptyRow}>
+            <View style={styles.colNo} />
+            <View style={styles.colName} />
+            <View style={styles.colIrisuu} />
+            <View style={styles.colKosuu} />
+            <View style={styles.colQty} />
+            <View style={styles.colUnit} />
+            <View style={styles.colUnitPrice}>
+              <Text style={styles.cellSummaryLabel}>(小  計)</Text>
             </View>
-            <View style={{ width: "12%" }}>
-              <Text style={styles.summaryInTableValue}>{fmt(quote.total)}</Text>
+            <View style={styles.colAmount}>
+              <Text style={styles.cellSummaryValue}>{fmt(quote.total)}</Text>
             </View>
-            <View style={{ width: "7%" }} />
+            <View style={styles.colNote} />
           </View>
 
           {/* 空行でページを埋める（税注記2行分を差し引く） */}
