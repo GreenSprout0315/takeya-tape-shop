@@ -17,14 +17,9 @@ export type Product = {
 // 高解像度版（shopimages/）を優先使用
 const IMG_15MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000001.jpg";
 const IMG_30MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000002.jpg";
-// 斜線テープは高解像度版なし — AI生成画像に差し替え予定（/public/images/ に配置後に更新）
 const IMG_DIAGONAL = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001303.gif";
-const IMG_DIAGONAL_15 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000033.gif";
-const IMG_DIAGONAL_30 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000043.gif";
 const IMG_NUMBER_1 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000005.jpg";
 const IMG_NUMBER_2 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000006.jpg";
-const IMG_NUMBER_3 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001753_pD9efVt.jpg";
-const IMG_NUMBER_4 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001743_xcRhQ3v.jpg";
 
 export const products: Product[] = [
   // ── 識別テープ 30mm（0.08mm × 30mm × 50m）──
@@ -254,36 +249,6 @@ export const products: Product[] = [
     features: ["高識別性", "2色斜線柄", "3色展開"],
     featured: true,
     image: IMG_DIAGONAL,
-  },
-  {
-    id: "diagonal-bio-15",
-    name: "植物繊維バン斜線テープ 15mm",
-    category: "斜線テープ",
-    description: "植物繊維を使用した環境配慮型の斜線入りテープ。15mm幅×100mの長尺仕様で、結束用途や細かなマーキングに最適です。自然環境への負荷を低減します。",
-    color: "#228B22",
-    colorName: "植物繊維",
-    thickness: "—",
-    width: "15mm",
-    length: "100m",
-    price: 990,
-    features: ["植物繊維", "環境配慮", "長尺100m"],
-    featured: false,
-    image: IMG_DIAGONAL_15,
-  },
-  {
-    id: "diagonal-bio-30",
-    name: "植物繊維バン斜線テープ 30mm",
-    category: "斜線テープ",
-    description: "植物繊維を使用した環境配慮型の斜線入りテープ。30mm幅×100mの長尺仕様で、幹への巻付けや境界マーキングに適しています。太幅で視認性も確保。",
-    color: "#228B22",
-    colorName: "植物繊維",
-    thickness: "—",
-    width: "30mm",
-    length: "100m",
-    price: 1870,
-    features: ["植物繊維", "環境配慮", "長尺100m"],
-    featured: false,
-    image: IMG_DIAGONAL_30,
   },
   // ── ナンバーテープ ──
   {
