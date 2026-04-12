@@ -1,14 +1,16 @@
 /**
- * Customer Master — 顧客マスター
+ * Customer Master — 顧客マスター（レガシー / アーカイブ）
  *
- * 竹谷商事の識別テープ取引先のうち、**特別価格の業者**だけを管理する。
- * 一般顧客（64社）は個別登録せず、標準売価を一律適用する。
+ * ⚠️ 2026-04-12 以降、アプリ本体はこのファイルを参照しない。
+ * 顧客データと特別価格は Neon Postgres に移行済み。
+ * → DB操作は lib/customer-db.ts を使用すること。
+ *
+ * このファイルは以下の用途で残している:
+ * - scripts/verify-master.ts（開発用検証スクリプト）
+ * - 初期データの参照元（seed-admin.ts のソース）
  *
  * 出典: 宮本さん担当分売上実績CSV（2022/06〜2026/04）を分析した結果
  *       `sales/clients/takeya-shoji/miyamoto-tape-sales.csv`
- *
- * Phase D（顧客マスターの完全自動化）で拡張予定だが、現時点では下記3社のみで
- * 売上の約6割をカバーしている。
  */
 
 import type { ProductSpec } from "./product-master";

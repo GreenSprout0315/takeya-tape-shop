@@ -32,6 +32,9 @@ export default function Header() {
           <Link href="/order" className="text-sm tracking-widest uppercase px-4 py-2 bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors">
             発注する
           </Link>
+          <Link href="/login" className="text-xs text-gray-400 hover:text-[#1C3557] transition-colors">
+            ログイン
+          </Link>
         </nav>
 
         {/* Hamburger */}
@@ -66,6 +69,9 @@ export default function Header() {
           </Link>
           <Link href="/order" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase px-4 py-3 bg-[#E07B2A] text-white text-center">
             発注する
+          </Link>
+          <Link href="/login" onClick={() => setMenuOpen(false)} className="text-xs text-gray-400 hover:text-[#1C3557] transition-colors py-2">
+            ログイン
           </Link>
         </nav>
       )}

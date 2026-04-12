@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ALL_SPECS,
@@ -12,10 +12,6 @@ import {
   type ProductSpec,
 } from "@/lib/product-master";
 import {
-  findCustomerByName,
-  getCustomerPrice,
-} from "@/lib/customer-master";
-import {
   TAX_RATE,
   validateOrderRequest,
   type OrderLine,
@@ -26,7 +22,7 @@ import {
 // 型
 // ───────────────────────────────────────────────
 
-type CustomerInfo = {
+type CustomerFormData = {
   companyName: string;
   contactName: string;
   email: string;
@@ -35,6 +31,16 @@ type CustomerInfo = {
   shippingAddress: string;
   desiredDelivery: string;
   notes: string;
+};
+
+/** DB から取得した特別価格マップ (specId → price) */
+type PriceMap = Record<string, number>;
+
+type LoggedInCustomer = {
+  id: number;
+  name: string;
+  contactName: string | null;
+  email: string | null;
 };
 
 type QuantityMap = Record<string, number>; // "specId__colorId" → qty
@@ -75,10 +81,18 @@ function renderSwatch(colorId: ColorId) {
 // メインコンポーネント
 // ───────────────────────────────────────────────
 
+/** specId と priceMap から適用単価を返す（クライアント側） */
+function resolvePrice(spec: ProductSpec, priceMap: PriceMap | null): number {
+  if (priceMap && priceMap[spec.id] !== undefined) {
+    return priceMap[spec.id];
+  }
+  return spec.wholesalePrice;
+}
+
 export default function OrderForm() {
   const router = useRouter();
 
-  const [customer, setCustomer] = useState<CustomerInfo>({
+  const [customerForm, setCustomerForm] = useState<CustomerFormData>({
     companyName: "",
     contactName: "",
     email: "",
@@ -89,20 +103,40 @@ export default function OrderForm() {
     notes: "",
   });
 
+  // ログイン状態 & DB 特別価格
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedInCustomer, setLoggedInCustomer] = useState<LoggedInCustomer | null>(null);
+  const [priceMap, setPriceMap] = useState<PriceMap | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+
+  // セッション読み込み
+  useEffect(() => {
+    fetch("/api/order/my-prices")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.loggedIn && data.customer) {
+          setLoggedIn(true);
+          setLoggedInCustomer(data.customer);
+          setPriceMap(data.prices);
+          // 顧客情報を自動入力
+          setCustomerForm((prev) => ({
+            ...prev,
+            companyName: data.customer.name || prev.companyName,
+            contactName: data.customer.contactName || prev.contactName,
+            email: data.customer.email || prev.email,
+          }));
+        }
+      })
+      .finally(() => setSessionLoaded(true));
+  }, []);
+
   const [quantities, setQuantities] = useState<QuantityMap>({});
   const [activeCategory, setActiveCategory] =
     useState<ProductCategory>("standard");
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  // 会社名マッチング（特価自動判定）
-  const matchedCustomer = useMemo(
-    () =>
-      customer.companyName.trim()
-        ? findCustomerByName(customer.companyName)
-        : undefined,
-    [customer.companyName]
-  );
+  const hasSpecialPrices = priceMap !== null && Object.keys(priceMap).length > 0;
 
   // 見積計算（クライアント側でライブ表示、サーバーでも再計算）
   const lines: OrderLine[] = useMemo(() => {
@@ -120,7 +154,7 @@ export default function OrderForm() {
     const detail = lines.map((line) => {
       const spec = ALL_SPECS.find((s) => s.id === line.specId);
       if (!spec) return null;
-      const unit = getCustomerPrice(spec, matchedCustomer ?? null);
+      const unit = resolvePrice(spec, priceMap);
       const sub = unit * line.quantity;
       subtotal += sub;
       return {
@@ -138,7 +172,7 @@ export default function OrderForm() {
       tax,
       total: subtotal + tax,
     };
-  }, [lines, matchedCustomer]);
+  }, [lines, priceMap]);
 
   // 数量更新
   const updateQty = (specId: string, colorId: ColorId, value: string) => {
@@ -166,14 +200,14 @@ export default function OrderForm() {
     setErrors([]);
 
     const req: Partial<OrderRequest> = {
-      companyName: customer.companyName.trim(),
-      contactName: customer.contactName.trim(),
-      email: customer.email.trim(),
-      phone: customer.phone.trim() || undefined,
-      zipCode: customer.zipCode.trim() || undefined,
-      shippingAddress: customer.shippingAddress.trim() || undefined,
-      desiredDelivery: customer.desiredDelivery.trim() || undefined,
-      notes: customer.notes.trim() || undefined,
+      companyName: customerForm.companyName.trim(),
+      contactName: customerForm.contactName.trim(),
+      email: customerForm.email.trim(),
+      phone: customerForm.phone.trim() || undefined,
+      zipCode: customerForm.zipCode.trim() || undefined,
+      shippingAddress: customerForm.shippingAddress.trim() || undefined,
+      desiredDelivery: customerForm.desiredDelivery.trim() || undefined,
+      notes: customerForm.notes.trim() || undefined,
       lines,
     };
 
@@ -244,6 +278,41 @@ export default function OrderForm() {
         </div>
       )}
 
+      {/* ログイン状態バナー */}
+      {sessionLoaded && !loggedIn && (
+        <div className="mb-6 border border-blue-200 bg-blue-50 px-5 py-3 rounded-sm flex items-center justify-between">
+          <p className="text-sm text-blue-700">
+            取引先アカウントをお持ちの方はログインすると特別価格が適用されます
+          </p>
+          <a
+            href="/login"
+            className="px-4 py-1.5 bg-[#1C3557] text-white text-xs rounded hover:bg-[#152a45] transition-colors"
+          >
+            ログイン
+          </a>
+        </div>
+      )}
+
+      {loggedIn && loggedInCustomer && (
+        <div className="mb-6 border border-green-200 bg-green-50 px-5 py-3 rounded-sm flex items-center justify-between">
+          <p className="text-sm text-green-700">
+            <span className="font-bold">{loggedInCustomer.name}</span>{" "}
+            としてログイン中
+            {hasSpecialPrices && " — 特別価格が適用されています"}
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              await fetch("/api/auth/logout", { method: "POST" });
+              window.location.reload();
+            }}
+            className="text-xs text-green-600 hover:underline"
+          >
+            ログアウト
+          </button>
+        </div>
+      )}
+
       {/* お客様情報 */}
       <section className="mb-10 border border-gray-200 bg-white p-6">
         <h2 className="text-sm tracking-widest uppercase text-gray-500 mb-5 border-l-4 border-[#E07B2A] pl-3">
@@ -258,18 +327,17 @@ export default function OrderForm() {
             <input
               type="text"
               required
-              value={customer.companyName}
+              value={customerForm.companyName}
               onChange={(e) =>
-                setCustomer({ ...customer, companyName: e.target.value })
+                setCustomerForm({ ...customerForm, companyName: e.target.value })
               }
+              readOnly={loggedIn && !!loggedInCustomer}
               placeholder="例: ○○県森林組合連合会"
-              className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
+              className={`w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557] ${loggedIn && loggedInCustomer ? "bg-gray-50 text-gray-600" : ""}`}
             />
-            {matchedCustomer && (
+            {hasSpecialPrices && (
               <p className="mt-2 text-xs text-[#E07B2A] font-semibold">
-                ✓ 特別価格顧客として認識しました:{" "}
-                <span className="font-bold">{matchedCustomer.name}</span>
-                （特別価格が自動適用されます）
+                ✓ 特別価格が自動適用されています
               </p>
             )}
           </div>
@@ -281,9 +349,9 @@ export default function OrderForm() {
             <input
               type="text"
               required
-              value={customer.contactName}
+              value={customerForm.contactName}
               onChange={(e) =>
-                setCustomer({ ...customer, contactName: e.target.value })
+                setCustomerForm({ ...customerForm, contactName: e.target.value })
               }
               className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
             />
@@ -295,9 +363,9 @@ export default function OrderForm() {
             </label>
             <input
               type="tel"
-              value={customer.phone}
+              value={customerForm.phone}
               onChange={(e) =>
-                setCustomer({ ...customer, phone: e.target.value })
+                setCustomerForm({ ...customerForm, phone: e.target.value })
               }
               className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
             />
@@ -310,9 +378,9 @@ export default function OrderForm() {
             <input
               type="email"
               required
-              value={customer.email}
+              value={customerForm.email}
               onChange={(e) =>
-                setCustomer({ ...customer, email: e.target.value })
+                setCustomerForm({ ...customerForm, email: e.target.value })
               }
               className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
             />
@@ -324,9 +392,9 @@ export default function OrderForm() {
             </label>
             <input
               type="text"
-              value={customer.zipCode}
+              value={customerForm.zipCode}
               onChange={(e) =>
-                setCustomer({ ...customer, zipCode: e.target.value })
+                setCustomerForm({ ...customerForm, zipCode: e.target.value })
               }
               placeholder="例: 000-0000"
               className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
@@ -339,9 +407,9 @@ export default function OrderForm() {
             </label>
             <input
               type="text"
-              value={customer.desiredDelivery}
+              value={customerForm.desiredDelivery}
               onChange={(e) =>
-                setCustomer({ ...customer, desiredDelivery: e.target.value })
+                setCustomerForm({ ...customerForm, desiredDelivery: e.target.value })
               }
               placeholder="例: 2週間以内 / 4月末まで"
               className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
@@ -354,9 +422,9 @@ export default function OrderForm() {
             </label>
             <input
               type="text"
-              value={customer.shippingAddress}
+              value={customerForm.shippingAddress}
               onChange={(e) =>
-                setCustomer({ ...customer, shippingAddress: e.target.value })
+                setCustomerForm({ ...customerForm, shippingAddress: e.target.value })
               }
               className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557]"
             />
@@ -402,7 +470,7 @@ export default function OrderForm() {
           <SpecGrid
             specs={ALL_SPECS.filter((s) => s.category === activeCategory)}
             quantities={quantities}
-            matchedCustomer={matchedCustomer}
+            priceMap={priceMap}
             onChange={updateQty}
           />
         </div>
@@ -432,8 +500,8 @@ export default function OrderForm() {
         </h2>
         <textarea
           rows={4}
-          value={customer.notes}
-          onChange={(e) => setCustomer({ ...customer, notes: e.target.value })}
+          value={customerForm.notes}
+          onChange={(e) => setCustomerForm({ ...customerForm, notes: e.target.value })}
           placeholder="ご注文に関するご要望・ご質問をお書きください"
           className="w-full border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-[#1C3557] resize-none"
         />
@@ -446,7 +514,7 @@ export default function OrderForm() {
             <div>
               <div className="text-xs tracking-widest uppercase text-gray-500 mb-1">
                 見積金額（概算）
-                {matchedCustomer && (
+                {hasSpecialPrices && (
                   <span className="ml-2 text-[#E07B2A]">
                     ✓ 特別価格適用
                   </span>
@@ -506,14 +574,14 @@ export default function OrderForm() {
 type SpecGridProps = {
   specs: ProductSpec[];
   quantities: QuantityMap;
-  matchedCustomer: ReturnType<typeof findCustomerByName>;
+  priceMap: PriceMap | null;
   onChange: (specId: string, colorId: ColorId, value: string) => void;
 };
 
 function SpecGrid({
   specs,
   quantities,
-  matchedCustomer,
+  priceMap,
   onChange,
 }: SpecGridProps) {
   return (
@@ -531,9 +599,9 @@ function SpecGrid({
       </thead>
       <tbody>
         {specs.map((spec) => {
-          const unitPrice = getCustomerPrice(spec, matchedCustomer ?? null);
+          const unitPrice = resolvePrice(spec, priceMap);
           const isSpecial =
-            matchedCustomer?.tier === "special" && unitPrice !== spec.wholesalePrice;
+            priceMap !== null && priceMap[spec.id] !== undefined && unitPrice !== spec.wholesalePrice;
           return (
             <tr
               key={spec.id}

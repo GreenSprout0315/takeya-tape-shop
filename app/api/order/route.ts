@@ -14,9 +14,10 @@ import {
   validateOrderRequest,
   type OrderRequest,
 } from "@/lib/order";
-import { findCustomerByName } from "@/lib/customer-master";
 import { sendOrderNotification } from "@/lib/email";
 import { getNextQuoteNumber } from "@/lib/counter";
+import { getSession } from "@/lib/auth";
+import { getCustomerPriceMap } from "@/lib/customer-db";
 
 type RawOrderInput = Omit<OrderRequest, "id" | "receivedAt"> & {
   id?: string;
@@ -71,9 +72,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // 顧客マッチング & 見積生成
-    const matchedCustomer = findCustomerByName(orderRequest.companyName);
-    const quote = buildQuote(orderRequest, { matchedCustomer });
+    // 顧客マッチング & 見積生成（セッションからDB価格を取得）
+    const session = await getSession();
+    let dbPriceMap: Record<string, number> | null = null;
+    if (session?.customerId) {
+      dbPriceMap = await getCustomerPriceMap(session.customerId);
+    }
+    const quote = buildQuote(orderRequest, { dbPriceMap });
 
     // 見積番号（連番）を Vercel Blob の原子カウンターから採番
     //  失敗してもメール送信を止めないよう、エラーは捕捉する
@@ -100,7 +105,7 @@ export async function POST(request: Request) {
       contactName: orderRequest.contactName,
       email: orderRequest.email,
       priceTier: quote.priceTier,
-      matchedCustomer: matchedCustomer?.id,
+      sessionCustomerId: session?.customerId ?? null,
       lineCount: quote.lines.length,
       total: quote.total,
       elapsedMs: Date.now() - startedAt,

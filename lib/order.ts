@@ -14,11 +14,7 @@ import {
   type ColorId,
   type ProductSpec,
 } from "./product-master";
-import {
-  findCustomerByName,
-  getCustomerPrice,
-  type Customer,
-} from "./customer-master";
+import type { CustomerPriceMap } from "./customer-db";
 
 // ──────────────────────────────────────────────────────────────
 //  型定義
@@ -187,17 +183,20 @@ export function validateOrderRequest(
  */
 export function buildQuote(
   req: OrderRequest,
-  opts?: { matchedCustomer?: Customer | null }
+  opts?: { dbPriceMap?: CustomerPriceMap | null }
 ): Quote {
-  const customer =
-    opts?.matchedCustomer ?? findCustomerByName(req.companyName) ?? null;
+  const priceMap = opts?.dbPriceMap ?? null;
+  const hasSpecialPrices = priceMap !== null && Object.keys(priceMap).length > 0;
 
   const lines: QuoteLine[] = req.lines.map((line) => {
     const spec = getSpecById(line.specId);
     if (!spec) {
       throw new Error(`spec not found: ${line.specId}`);
     }
-    const unitPrice = getCustomerPrice(spec, customer);
+    const unitPrice =
+      priceMap && priceMap[spec.id] !== undefined
+        ? priceMap[spec.id]
+        : spec.wholesalePrice;
     const color = COLORS[line.colorId];
     return {
       specId: spec.id,
@@ -224,8 +223,7 @@ export function buildQuote(
     validUntil: validUntil.toISOString(),
     companyName: req.companyName,
     contactName: req.contactName,
-    customerId: customer?.id,
-    priceTier: customer?.tier ?? "standard",
+    priceTier: hasSpecialPrices ? "special" : "standard",
     lines,
     subtotal,
     taxRate: TAX_RATE,
