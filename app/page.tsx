@@ -138,25 +138,25 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                title: "30mm 識別テープ",
-                desc: "文字の書込みに適した標準幅。樹木への巻付け・番号記入・調査記録に。森林調査の現場で最もよく使われるサイズです。",
-                spec: "0.08mm × 30mm × 50m",
-                href: "/products?category=30mm+識別テープ",
+                title: "識別テープ",
+                desc: "森林調査・測量の現場で最も使われる定番テープ。15mm・30mmの2サイズ、7色展開。樹木への巻付け・枝への結束で確実なマーキングに。",
+                spec: "15mm / 30mm × 50m",
+                href: "/products?category=識別テープ",
                 colors: ["#FF69B4", "#DC143C", "#FF8C00", "#FFD700", "#228B22", "#1E90FF", "#FFFFFF"],
               },
               {
-                title: "15mm 識別テープ",
-                desc: "目印専用の細幅タイプ。枝への結束やルートマーキングに最適。コンパクトで携帯しやすく、登山やトレッキングにも人気。",
-                spec: "0.08mm × 15mm × 50m",
-                href: "/products?category=15mm+識別テープ",
-                colors: ["#FF69B4", "#DC143C", "#FF8C00", "#FFD700", "#228B22", "#1E90FF", "#FFFFFF"],
+                title: "斜線テープ",
+                desc: "2色の斜線柄で識別性を更に高めたテープ。複数業者が同一現場で作業する際の色分けに。植物繊維タイプもラインナップ。",
+                spec: "15mm / 30mm",
+                href: "/products?category=斜線テープ",
+                colors: ["#FF69B4", "#1E90FF", "#FFD700"],
               },
               {
-                title: "厚手・特殊テープ",
-                desc: "寒冷地向け厚手テープ（0.10mm）と環境配慮型バイオ分解テープ。特殊な環境・用途に対応した高機能ラインナップ。",
-                spec: "30mm × 100m",
-                href: "/products?category=厚手・特殊テープ",
-                colors: ["#FF69B4", "#1E90FF", "#DC143C"],
+                title: "ナンバーテープ",
+                desc: "ミシン目入りの番号付き識別テープ。伐採木・調査木のナンバリング管理に最適。フックバック仕様もあり、素早い取付けが可能。",
+                spec: "20mm × 50m",
+                href: "/products?category=ナンバーテープ",
+                colors: ["#000000", "#FFD700", "#FFFFFF"],
               },
             ].map((item) => (
               <div key={item.title} className="bg-white p-6 shadow-sm">

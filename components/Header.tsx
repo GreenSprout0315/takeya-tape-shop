@@ -9,7 +9,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link href="/" className="text-xl font-light tracking-[0.2em] text-[#1C3557]">
-          竹谷商事
+          株式会社竹谷商事
         </Link>
 
         {/* Desktop nav */}
@@ -17,14 +17,14 @@ export default function Header() {
           <Link href="/products" className="text-sm tracking-widest uppercase text-gray-500 hover:text-[#1C3557] transition-colors">
             All
           </Link>
-          <Link href="/products?category=30mm+識別テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
-            30mm
+          <Link href="/products?category=識別テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
+            識別テープ
           </Link>
-          <Link href="/products?category=15mm+識別テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
-            15mm
+          <Link href="/products?category=斜線テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
+            斜線テープ
           </Link>
-          <Link href="/products?category=厚手・特殊テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
-            厚手・特殊
+          <Link href="/products?category=ナンバーテープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
+            ナンバーテープ
           </Link>
           <Link href="/contact" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
             お問い合わせ
@@ -55,14 +55,14 @@ export default function Header() {
           <Link href="/products" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase text-gray-500 hover:text-[#1C3557] transition-colors py-2">
             すべての商品
           </Link>
-          <Link href="/products?category=30mm+識別テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
-            30mm 識別テープ
+          <Link href="/products?category=識別テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
+            識別テープ
           </Link>
-          <Link href="/products?category=15mm+識別テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
-            15mm 識別テープ
+          <Link href="/products?category=斜線テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
+            斜線テープ
           </Link>
-          <Link href="/products?category=厚手・特殊テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
-            厚手・特殊テープ
+          <Link href="/products?category=ナンバーテープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
+            ナンバーテープ
           </Link>
           <Link href="/contact" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
             お問い合わせ

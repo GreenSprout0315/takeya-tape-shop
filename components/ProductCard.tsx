@@ -1,15 +1,19 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Product } from "@/lib/products";
 
 export default function ProductCard({ product }: { product: Product }) {
   return (
     <div className="group flex flex-col">
-      {/* カラースウォッチ */}
+      {/* 商品画像 */}
       <Link href={`/products/${product.id}`} className="block relative">
-        <div className="relative overflow-hidden aspect-square mb-4">
-          <div
-            className="w-full h-full border border-gray-200"
-            style={{ backgroundColor: product.color }}
+        <div className="relative overflow-hidden aspect-square mb-4 bg-gray-50 border border-gray-200">
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 50vw, 25vw"
           />
 
           {/* 人気バッジ */}
@@ -20,7 +24,7 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
 
           {/* ホバー時 */}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300 flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
             <span className="text-white text-xs tracking-widest uppercase bg-black/60 px-4 py-2">
               詳細を見る →
             </span>
@@ -57,15 +61,12 @@ export default function ProductCard({ product }: { product: Product }) {
             ¥{product.price.toLocaleString()}
             <span className="text-xs text-gray-400 ml-1">/ 1本（税込）</span>
           </p>
-          <p className="text-xs text-gray-400 mb-3">
-            ケース（{product.caseCount}本）¥{product.casePrice.toLocaleString()}
-          </p>
 
           <Link
-            href="/contact"
-            className="block w-full py-3 text-center text-xs tracking-widest uppercase bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors"
+            href="/order"
+            className="block w-full mt-3 py-3 text-center text-xs tracking-widest uppercase bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors"
           >
-            見積もりを依頼
+            発注する
           </Link>
         </div>
       </div>

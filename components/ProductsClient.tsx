@@ -18,7 +18,7 @@ function ProductsContent() {
       <div className="text-center mb-12">
         <p className="text-xs tracking-[0.4em] uppercase text-[#E07B2A] mb-3">All Products</p>
         <h1 className="text-4xl font-light tracking-wide text-[#1C3557]">識別テープ 一覧</h1>
-        <p className="text-gray-400 text-sm mt-3">7色×3タイプ 全18種類取り揃えております</p>
+        <p className="text-gray-400 text-sm mt-3">識別テープ・斜線テープ・ナンバーテープを取り揃えております</p>
       </div>
 
       {/* カテゴリフィルター */}

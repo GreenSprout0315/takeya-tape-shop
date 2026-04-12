@@ -1,4 +1,5 @@
 import { Product } from "@/lib/products";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function ProductDetailClient({ product }: { product: Product }) {
@@ -12,12 +13,16 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       </Link>
 
       <div className="grid md:grid-cols-2 gap-16 mt-8">
-        {/* カラースウォッチ */}
-        <div className="relative aspect-square overflow-hidden border border-gray-200">
-          <div className="w-full h-full" style={{ backgroundColor: product.color }} />
-          <div className="absolute bottom-4 left-4 bg-white/90 px-3 py-1 text-xs tracking-widest text-[#1C3557] font-medium">
-            {product.colorName}
-          </div>
+        {/* 商品画像 */}
+        <div className="relative aspect-square overflow-hidden border border-gray-200 bg-gray-50">
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-contain p-4"
+            sizes="(max-width: 768px) 100vw, 50vw"
+            priority
+          />
         </div>
 
         {/* 商品情報 */}
@@ -59,23 +64,19 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </div>
 
           <div className="border-t border-gray-100 pt-8">
-            {/* 価格表 */}
-            <div className="mb-6 space-y-3">
+            {/* 単価 */}
+            <div className="mb-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400 tracking-wider">1本</span>
-                <span className="text-3xl font-light text-[#1C3557]">¥{product.price.toLocaleString()}<span className="text-sm text-gray-400">（税込）</span></span>
-              </div>
-              <div className="flex items-center justify-between bg-[#F5F6F8] px-4 py-3">
-                <span className="text-sm text-gray-500">ケース（{product.caseCount}本入）</span>
-                <span className="text-xl font-light text-[#1C3557]">¥{product.casePrice.toLocaleString()}<span className="text-sm text-gray-400">（税込）</span></span>
+                <span className="text-sm text-gray-400 tracking-wider">単価（税込）</span>
+                <span className="text-3xl font-light text-[#1C3557]">¥{product.price.toLocaleString()}</span>
               </div>
             </div>
 
             <Link
-              href="/contact"
+              href="/order"
               className="block w-full py-4 bg-[#E07B2A] text-white text-center text-xs tracking-widest uppercase hover:bg-[#c96e22] transition-colors"
             >
-              見積もり・お問い合わせ
+              発注する
             </Link>
             <Link
               href="/products"
