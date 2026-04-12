@@ -59,7 +59,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="mt-auto">
           <p className="text-lg font-light text-[#1C3557]">
             ¥{product.price.toLocaleString()}
-            <span className="text-xs text-gray-400 ml-1">/ 1本（税込）</span>
+            <span className="text-xs text-gray-400 ml-1">/ 1本（税抜）</span>
           </p>
 
           <Link

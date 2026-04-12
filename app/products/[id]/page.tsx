@@ -10,8 +10,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = getProductById(id);
   if (!product) return {};
 
-  const title = `${product.name} ${product.width}×${product.length} | 竹谷商事`;
-  const description = `${product.description} 参考価格¥${product.price.toLocaleString()}（税込）。`;
+  const title = `${product.name} ${product.width}×${product.length} | 株式会社竹谷商事`;
+  const description = `${product.description} 標準売価¥${product.price.toLocaleString()}（税抜）。`;
 
   return {
     title,

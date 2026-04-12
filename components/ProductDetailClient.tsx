@@ -67,7 +67,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             {/* 単価 */}
             <div className="mb-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400 tracking-wider">単価（税込）</span>
+                <span className="text-sm text-gray-400 tracking-wider">単価（税抜）</span>
                 <span className="text-3xl font-light text-[#1C3557]">¥{product.price.toLocaleString()}</span>
               </div>
             </div>
