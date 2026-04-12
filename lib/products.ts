@@ -316,21 +316,6 @@ export const products: Product[] = [
     featured: false,
     image: IMG_NUMBER_2,
   },
-  {
-    id: "number-white-hookback-yellow",
-    name: "ナンバーテープ 白地フックバック黄",
-    category: "ナンバーテープ",
-    description: "白地に黄色のフックバック仕様ナンバーテープ。明るい配色で視認性に優れ、枝への取り付けも容易。森林調査・測量の現場での効率的なナンバリングをサポートします。",
-    color: "#FFFFFF",
-    colorName: "白地フックバック黄",
-    thickness: "0.15mm",
-    width: "20mm",
-    length: "50m",
-    price: 2420,
-    features: ["フックバック", "番号付き", "明るい配色"],
-    featured: false,
-    image: IMG_NUMBER_4,
-  },
 ];
 
 export const categories = ["すべて", "識別テープ", "斜線テープ", "ナンバーテープ"];
