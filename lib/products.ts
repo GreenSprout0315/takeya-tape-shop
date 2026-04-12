@@ -17,7 +17,7 @@ export type Product = {
 // 高解像度版（shopimages/）を優先使用
 const IMG_15MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000001.jpg";
 const IMG_30MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000002.jpg";
-const IMG_DIAGONAL = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001303.gif";
+const IMG_DIAGONAL = "/images/products/diagonal-tape.png";
 const IMG_NUMBER_1 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000005.jpg";
 const IMG_NUMBER_2 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000006.jpg";
 
