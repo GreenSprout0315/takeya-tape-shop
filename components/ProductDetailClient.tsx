@@ -1,8 +1,21 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Product } from "@/lib/products";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function ProductDetailClient({ product }: { product: Product }) {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => setLoggedIn(!!data.user))
+      .finally(() => setLoaded(true));
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-16">
       <Link
@@ -64,20 +77,37 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </div>
 
           <div className="border-t border-gray-100 pt-8">
-            {/* 単価 */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400 tracking-wider">単価（税抜）</span>
-                <span className="text-3xl font-light text-[#1C3557]">¥{product.price.toLocaleString()}</span>
-              </div>
-            </div>
+            {loaded && loggedIn ? (
+              <>
+                {/* 単価 */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-400 tracking-wider">単価（税抜）</span>
+                    <span className="text-3xl font-light text-[#1C3557]">¥{product.price.toLocaleString()}</span>
+                  </div>
+                </div>
 
-            <Link
-              href="/order"
-              className="block w-full py-4 bg-[#E07B2A] text-white text-center text-xs tracking-widest uppercase hover:bg-[#c96e22] transition-colors"
-            >
-              発注する
-            </Link>
+                <Link
+                  href="/order"
+                  className="block w-full py-4 bg-[#E07B2A] text-white text-center text-xs tracking-widest uppercase hover:bg-[#c96e22] transition-colors"
+                >
+                  発注する
+                </Link>
+              </>
+            ) : loaded ? (
+              <>
+                <p className="text-sm text-gray-500 mb-4">
+                  価格の確認・ご注文にはログインが必要です
+                </p>
+                <Link
+                  href="/login"
+                  className="block w-full py-4 bg-[#1C3557] text-white text-center text-xs tracking-widest uppercase hover:bg-[#152a45] transition-colors"
+                >
+                  ログインして価格を見る
+                </Link>
+              </>
+            ) : null}
+
             <Link
               href="/products"
               className="block w-full mt-3 py-4 border border-[#1C3557] text-center text-xs tracking-widest uppercase hover:bg-[#1C3557] hover:text-white transition-all"

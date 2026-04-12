@@ -1,9 +1,7 @@
 import Link from "next/link";
-import { getFeaturedProducts } from "@/lib/products";
-import ProductCard from "@/components/ProductCard";
+import FeaturedProducts from "@/components/FeaturedProducts";
 
 export default function HomePage() {
-  const featured = getFeaturedProducts();
 
   return (
     <div>
@@ -112,11 +110,7 @@ export default function HomePage() {
             <h2 className="text-3xl font-light tracking-wide text-[#1C3557]">人気の識別テープ</h2>
             <p className="text-gray-400 text-sm mt-3">多くの現場で採用されている識別テープ</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
-          </div>
+          <FeaturedProducts />
           <div className="text-center mt-16">
             <Link
               href="/products"

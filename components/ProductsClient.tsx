@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { products, categories } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 import { useSearchParams } from "next/navigation";
@@ -8,6 +8,15 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get("category") || "すべて";
   const [selected, setSelected] = useState(initialCategory);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => setLoggedIn(!!data.user))
+      .finally(() => setSessionLoaded(true));
+  }, []);
 
   const filtered = selected === "すべて"
     ? products
@@ -40,7 +49,7 @@ function ProductsContent() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
         {filtered.map((p) => (
-          <ProductCard key={p.id} product={p} />
+          <ProductCard key={p.id} product={p} showPrice={sessionLoaded && loggedIn} />
         ))}
       </div>
 

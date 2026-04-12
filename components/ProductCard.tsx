@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Product } from "@/lib/products";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, showPrice = true }: { product: Product; showPrice?: boolean }) {
   return (
     <div className="group flex flex-col">
       {/* 商品画像 */}
@@ -57,17 +57,27 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
 
         <div className="mt-auto">
-          <p className="text-lg font-light text-[#1C3557]">
-            ¥{product.price.toLocaleString()}
-            <span className="text-xs text-gray-400 ml-1">/ 1本（税抜）</span>
-          </p>
-
-          <Link
-            href="/order"
-            className="block w-full mt-3 py-3 text-center text-xs tracking-widest uppercase bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors"
-          >
-            発注する
-          </Link>
+          {showPrice ? (
+            <>
+              <p className="text-lg font-light text-[#1C3557]">
+                ¥{product.price.toLocaleString()}
+                <span className="text-xs text-gray-400 ml-1">/ 1本（税抜）</span>
+              </p>
+              <Link
+                href="/order"
+                className="block w-full mt-3 py-3 text-center text-xs tracking-widest uppercase bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors"
+              >
+                発注する
+              </Link>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="block w-full mt-3 py-3 text-center text-xs tracking-widest uppercase border border-[#1C3557] text-[#1C3557] hover:bg-[#1C3557] hover:text-white transition-all"
+            >
+              ログインして価格を見る
+            </Link>
+          )}
         </div>
       </div>
     </div>
