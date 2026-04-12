@@ -14,13 +14,15 @@ export type Product = {
   image: string;
 };
 
-const IMG_15MM = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000013.jpg";
-const IMG_30MM = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000023.jpg";
+// 高解像度版（shopimages/）を優先使用
+const IMG_15MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000001.jpg";
+const IMG_30MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000002.jpg";
+// 斜線テープは高解像度版なし — AI生成画像に差し替え予定（/public/images/ に配置後に更新）
 const IMG_DIAGONAL = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001303.gif";
 const IMG_DIAGONAL_15 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000033.gif";
 const IMG_DIAGONAL_30 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000043.gif";
-const IMG_NUMBER_1 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000053.jpg";
-const IMG_NUMBER_2 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000000063.jpg";
+const IMG_NUMBER_1 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000005.jpg";
+const IMG_NUMBER_2 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000006.jpg";
 const IMG_NUMBER_3 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001753_pD9efVt.jpg";
 const IMG_NUMBER_4 = "https://makeshop-multi-images.akamaized.net/taketani/itemimages/0000000001743_xcRhQ3v.jpg";
 
