@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getOrderById } from "@/lib/order-db";
 import { QUOTE_STATUS_LABELS, type QuoteStatus } from "@/lib/order";
 import StatusSelect from "./StatusSelect";
+import AdvanceStatusButton from "./AdvanceStatusButton";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,7 @@ export default async function AdminOrderDetailPage({
         ← 発注一覧に戻る
       </Link>
 
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">
             発注詳細
@@ -49,10 +50,22 @@ export default async function AdminOrderDetailPage({
             受付: {formatDate(order.received_at)}
           </p>
         </div>
-        <StatusSelect
-          orderId={order.id}
-          currentStatus={order.status as QuoteStatus}
-        />
+        <div className="flex items-start gap-3 flex-wrap">
+          <a
+            href={`/api/admin/orders/${order.id}/pdf`}
+            className="inline-flex items-center gap-1 px-4 py-1.5 text-sm font-medium rounded border border-[#1C3557] text-[#1C3557] bg-white hover:bg-[#1C3557]/5 transition-colors"
+          >
+            📄 見積PDF
+          </a>
+          <AdvanceStatusButton
+            orderId={order.id}
+            currentStatus={order.status as QuoteStatus}
+          />
+          <StatusSelect
+            orderId={order.id}
+            currentStatus={order.status as QuoteStatus}
+          />
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">

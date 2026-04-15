@@ -122,6 +122,32 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   cancelled: "取消",
 };
 
+/** 通常の発注ライフサイクル（draft/cancelled は含まない） */
+export const STATUS_FLOW: QuoteStatus[] = [
+  "issued",
+  "approved",
+  "shipping",
+  "shipped",
+  "invoiced",
+  "paid",
+];
+
+/** 現在ステータスから次に進めるステータスを返す。終端なら null */
+export function getNextStatus(current: QuoteStatus): QuoteStatus | null {
+  const idx = STATUS_FLOW.indexOf(current);
+  if (idx < 0 || idx === STATUS_FLOW.length - 1) return null;
+  return STATUS_FLOW[idx + 1];
+}
+
+/** 「次へ進める」ボタンに表示するアクション文言 */
+export const STATUS_ACTION_LABELS: Partial<Record<QuoteStatus, string>> = {
+  issued: "承認する",
+  approved: "出荷準備へ",
+  shipping: "発送済みにする",
+  shipped: "請求済みにする",
+  invoiced: "入金済みにする",
+};
+
 // ──────────────────────────────────────────────────────────────
 //  税率・有効期限などの定数
 // ──────────────────────────────────────────────────────────────

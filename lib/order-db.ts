@@ -6,7 +6,14 @@
  */
 
 import { getDb } from "./db";
-import type { OrderRequest, Quote, QuoteStatus } from "./order";
+import {
+  QUOTE_VALID_DAYS,
+  TAX_RATE,
+  type OrderRequest,
+  type Quote,
+  type QuoteStatus,
+} from "./order";
+import type { ColorId } from "./product-master";
 
 export type OrderRow = {
   id: string;
@@ -141,4 +148,56 @@ export async function updateOrderStatus(
     SET status = ${status}, status_updated_at = NOW()
     WHERE id = ${id}
   `;
+}
+
+/** DB の受注レコードを OrderRequest 形式へ復元（PDF再生成などに使用） */
+export function toOrderRequest(row: OrderWithLines): OrderRequest {
+  return {
+    id: row.id,
+    receivedAt: row.received_at,
+    companyName: row.company_name,
+    contactName: row.contact_name,
+    email: row.email,
+    phone: row.phone ?? undefined,
+    zipCode: row.zip_code ?? undefined,
+    shippingAddress: row.shipping_address ?? undefined,
+    desiredDelivery: row.desired_delivery ?? undefined,
+    notes: row.notes ?? undefined,
+    lines: row.lines.map((l) => ({
+      specId: l.spec_id,
+      colorId: l.color_id as ColorId,
+      quantity: l.quantity,
+    })),
+  };
+}
+
+/** DB の受注レコードを Quote 形式へ復元（PDF再生成などに使用） */
+export function toQuote(row: OrderWithLines): Quote {
+  const issuedAt = row.received_at;
+  const validUntilDate = new Date(issuedAt);
+  validUntilDate.setDate(validUntilDate.getDate() + QUOTE_VALID_DAYS);
+  return {
+    id: row.id,
+    quoteNumber: row.quote_number ?? undefined,
+    issuedAt,
+    validUntil: validUntilDate.toISOString(),
+    companyName: row.company_name,
+    contactName: row.contact_name,
+    priceTier: row.price_tier,
+    lines: row.lines.map((l) => ({
+      specId: l.spec_id,
+      colorId: l.color_id as ColorId,
+      productName: l.product_name,
+      colorName: l.color_name,
+      unitPrice: l.unit_price,
+      quantity: l.quantity,
+      subtotal: l.subtotal,
+    })),
+    subtotal: row.subtotal,
+    taxRate: TAX_RATE,
+    tax: row.tax,
+    total: row.total,
+    status: row.status,
+    notes: row.notes ?? undefined,
+  };
 }
