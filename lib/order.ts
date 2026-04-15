@@ -122,15 +122,11 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
   cancelled: "取消",
 };
 
-/** 通常の発注ライフサイクル（draft/cancelled は含まない） */
-export const STATUS_FLOW: QuoteStatus[] = [
-  "issued",
-  "approved",
-  "shipping",
-  "shipped",
-  "invoiced",
-  "paid",
-];
+/**
+ * 当システムで扱う発注ライフサイクル: issued → approved まで。
+ * 以降の出荷・請求・入金は別サイクル（社内既存運用）で対応する。
+ */
+export const STATUS_FLOW: QuoteStatus[] = ["issued", "approved"];
 
 /** 現在ステータスから次に進めるステータスを返す。終端なら null */
 export function getNextStatus(current: QuoteStatus): QuoteStatus | null {
@@ -142,10 +138,6 @@ export function getNextStatus(current: QuoteStatus): QuoteStatus | null {
 /** 「次へ進める」ボタンに表示するアクション文言 */
 export const STATUS_ACTION_LABELS: Partial<Record<QuoteStatus, string>> = {
   issued: "承認する",
-  approved: "出荷準備へ",
-  shipping: "発送済みにする",
-  shipped: "請求済みにする",
-  invoiced: "入金済みにする",
 };
 
 // ──────────────────────────────────────────────────────────────

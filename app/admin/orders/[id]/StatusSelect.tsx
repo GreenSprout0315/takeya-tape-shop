@@ -4,15 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { QUOTE_STATUS_LABELS, type QuoteStatus } from "@/lib/order";
 
-const OPTIONS: QuoteStatus[] = [
-  "issued",
-  "approved",
-  "shipping",
-  "shipped",
-  "invoiced",
-  "paid",
-  "cancelled",
-];
+const OPTIONS: QuoteStatus[] = ["issued", "approved", "cancelled"];
 
 export default function StatusSelect({
   orderId,
