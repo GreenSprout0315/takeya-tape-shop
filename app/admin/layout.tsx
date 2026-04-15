@@ -19,6 +19,9 @@ export default function AdminLayout({
             <a href="/admin" className="hover:underline">
               ダッシュボード
             </a>
+            <a href="/admin/orders" className="hover:underline">
+              発注管理
+            </a>
             <a href="/admin/customers" className="hover:underline">
               顧客管理
             </a>

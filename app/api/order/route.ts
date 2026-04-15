@@ -18,6 +18,7 @@ import { sendOrderNotification } from "@/lib/email";
 import { getNextQuoteNumber } from "@/lib/counter";
 import { getSession } from "@/lib/auth";
 import { getCustomerPriceMap } from "@/lib/customer-db";
+import { persistOrder } from "@/lib/order-db";
 
 type RawOrderInput = Omit<OrderRequest, "id" | "receivedAt"> & {
   id?: string;
@@ -97,6 +98,18 @@ export async function POST(request: Request) {
       });
     }
 
+    // DB 永続化（失敗しても発注フロー自体は止めず、エラーログのみ）
+    try {
+      await persistOrder(orderRequest, quote, session?.customerId ?? null);
+      console.log("[ORDER] DB永続化成功", { requestId, id });
+    } catch (err) {
+      console.error("[ORDER] DB永続化失敗（メール送信は継続）", {
+        requestId,
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // サーバーログ出力（Vercel Functions ログで確認可能）
     console.log("[ORDER RECEIVED]", {
       requestId,
@@ -147,8 +160,6 @@ export async function POST(request: Request) {
         });
       }
     }
-
-    // TODO Phase C: Neon Postgres に永続化
 
     return NextResponse.json({
       ok: true,
