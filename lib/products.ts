@@ -1,287 +1,66 @@
+/**
+ * /products 表示用の Product 一覧。
+ * マスターは `lib/product-master.ts`（ALL_SPECS = 31 スペック）。
+ * 1 Product = 1 スペック。色展開は `colors` に集約してカード/詳細で表示する。
+ */
+
+import {
+  ALL_SPECS,
+  COLORS,
+  type ColorInfo,
+  type ProductCategory,
+  type ProductSpec,
+} from "./product-master";
+
+const IMG_15MM =
+  "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000001.jpg";
+const IMG_30MM =
+  "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000002.jpg";
+const IMG_NUMBER =
+  "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000005.jpg";
+const IMG_DIAGONAL = "/images/products/diagonal-tape.png";
+
+function pickImage(spec: ProductSpec): string {
+  if (spec.category === "number") return IMG_NUMBER;
+  if (spec.category === "diagonal") return IMG_DIAGONAL;
+  return spec.width <= 15 ? IMG_15MM : IMG_30MM;
+}
+
+const CATEGORY_LABEL: Record<ProductCategory, string> = {
+  standard: "識別テープ",
+  number: "ナンバーテープ",
+  diagonal: "斜線テープ",
+};
+
 export type Product = {
   id: string;
   name: string;
   category: string;
   description: string;
-  color: string;
-  colorName: string;
   thickness: string;
   width: string;
   length: string;
   price: number;
-  features: string[];
+  listPrice: number;
+  colors: ColorInfo[];
   featured: boolean;
   image: string;
 };
 
-// 高解像度版（shopimages/）を優先使用
-const IMG_15MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000001.jpg";
-const IMG_30MM = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000002.jpg";
-const IMG_DIAGONAL = "/images/products/diagonal-tape.png";
-const IMG_NUMBER_1 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000005.jpg";
-const IMG_NUMBER_2 = "https://makeshop-multi-images.akamaized.net/taketani/shopimages/1_000000000006.jpg";
-
-export const products: Product[] = [
-  // ── 識別テープ 30mm（0.08mm × 30mm × 50m）──
-  {
-    id: "30mm-pink",
-    name: "識別テープ 30mm ピンク",
-    category: "識別テープ",
-    description: "森林調査・測量の現場で最も使用頻度の高いピンク色の識別テープ。樹木への巻付けや枝への結束で遠方からの視認性に優れ、伐採予定木の目印や踏査ルートのマーキングに最適です。",
-    color: "#FF69B4",
-    colorName: "ピンク",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["高視認性", "文字書込み可", "非粘着"],
-    featured: true,
-    image: IMG_30MM,
-  },
-  {
-    id: "30mm-red",
-    name: "識別テープ 30mm 赤",
-    category: "識別テープ",
-    description: "伐採木・危険木のマーキングに広く使われる赤色テープ。鮮やかな発色で林内でも目立ちやすく、境界杭の目印や土木現場での区域表示にも活用されています。",
-    color: "#DC143C",
-    colorName: "赤",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["高視認性", "文字書込み可", "非粘着"],
-    featured: true,
-    image: IMG_30MM,
-  },
-  {
-    id: "30mm-orange",
-    name: "識別テープ 30mm 橙",
-    category: "識別テープ",
-    description: "境界線表示や間伐対象木のマーキングに使用される橙色テープ。緑の多い林内で赤と並んで視認性が高く、森林計画調査や造林作業の現場で重宝されます。",
-    color: "#FF8C00",
-    colorName: "橙",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["高視認性", "文字書込み可", "非粘着"],
-    featured: false,
-    image: IMG_30MM,
-  },
-  {
-    id: "30mm-yellow",
-    name: "識別テープ 30mm 黄",
-    category: "識別テープ",
-    description: "注意喚起や品種識別に活用される黄色テープ。林班境界の表示、植栽品種の色分け管理など幅広い用途で使用されています。油性ペンでの書込みも鮮明に読み取れます。",
-    color: "#FFD700",
-    colorName: "黄",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["高視認性", "文字書込み可", "非粘着"],
-    featured: true,
-    image: IMG_30MM,
-  },
-  {
-    id: "30mm-green",
-    name: "識別テープ 30mm 緑",
-    category: "識別テープ",
-    description: "残存木・保護木のマーキングに使われる緑色テープ。伐採しない木の目印や保全区域の境界表示に。他の色との組み合わせで複数の情報を色分け管理できます。",
-    color: "#228B22",
-    colorName: "緑",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["文字書込み可", "非粘着", "色分け管理"],
-    featured: false,
-    image: IMG_30MM,
-  },
-  {
-    id: "30mm-blue",
-    name: "識別テープ 30mm 青",
-    category: "識別テープ",
-    description: "測量ポイントや水源周辺のマーキングに活用される青色テープ。登山道の目印やトレイルマーキングにも人気が高く、山岳地帯での使用実績も豊富です。",
-    color: "#1E90FF",
-    colorName: "青",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["高視認性", "文字書込み可", "非粘着"],
-    featured: false,
-    image: IMG_30MM,
-  },
-  {
-    id: "30mm-white",
-    name: "識別テープ 30mm 白",
-    category: "識別テープ",
-    description: "文字の書込みに最適な白色テープ。番号・記号・日付などの記入がしやすく、樹木ナンバリングや調査記録の現場で活躍します。片面光沢仕上げで耐水性も確保。",
-    color: "#FFFFFF",
-    colorName: "白",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 290,
-    features: ["文字書込み最適", "片面光沢", "非粘着"],
-    featured: false,
-    image: IMG_30MM,
-  },
-  // ── 識別テープ 15mm（0.08mm × 15mm × 50m）──
-  {
-    id: "15mm-pink",
-    name: "識別テープ 15mm ピンク",
-    category: "識別テープ",
-    description: "細幅で取り回しやすいピンク色の目印テープ。枝や杭への結束が簡単で、踏査ルートのマーキングや登山道の目印に最適。携帯性に優れたコンパクトサイズです。",
-    color: "#FF69B4",
-    colorName: "ピンク",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "結束しやすい", "非粘着"],
-    featured: true,
-    image: IMG_15MM,
-  },
-  {
-    id: "15mm-red",
-    name: "識別テープ 15mm 赤",
-    category: "識別テープ",
-    description: "伐採木や注意箇所の目印に使われる赤色の細幅テープ。軽量で携帯しやすく、山林踏査やトレイルランニングのコースマーキングにも活用されています。",
-    color: "#DC143C",
-    colorName: "赤",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "高視認性", "非粘着"],
-    featured: false,
-    image: IMG_15MM,
-  },
-  {
-    id: "15mm-orange",
-    name: "識別テープ 15mm 橙",
-    category: "識別テープ",
-    description: "林内での目印用に適した橙色の細幅テープ。15mm幅は目印専用として最適なサイズで、枝に結んでも風で目立ちやすく、測量や境界確認の現場で重宝されます。",
-    color: "#FF8C00",
-    colorName: "橙",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "結束しやすい", "非粘着"],
-    featured: false,
-    image: IMG_15MM,
-  },
-  {
-    id: "15mm-yellow",
-    name: "識別テープ 15mm 黄",
-    category: "識別テープ",
-    description: "注意表示や品種識別に使いやすい黄色の細幅テープ。コンパクトなので作業着のポケットに入れて持ち歩け、必要な時にすぐ使える利便性が魅力です。",
-    color: "#FFD700",
-    colorName: "黄",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "高視認性", "非粘着"],
-    featured: false,
-    image: IMG_15MM,
-  },
-  {
-    id: "15mm-green",
-    name: "識別テープ 15mm 緑",
-    category: "識別テープ",
-    description: "保護木や残存木の目印に使用される緑色の細幅テープ。色分け管理の一環として他の色と組み合わせて使用されることが多く、現場での情報整理に役立ちます。",
-    color: "#228B22",
-    colorName: "緑",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "色分け管理", "非粘着"],
-    featured: false,
-    image: IMG_15MM,
-  },
-  {
-    id: "15mm-blue",
-    name: "識別テープ 15mm 青",
-    category: "識別テープ",
-    description: "測量ポイントや登山ルートの目印に使用される青色の細幅テープ。登山・トレッキングでのルートマーキングに人気で、携帯しやすいサイズが好評です。",
-    color: "#1E90FF",
-    colorName: "青",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "高視認性", "非粘着"],
-    featured: false,
-    image: IMG_15MM,
-  },
-  {
-    id: "15mm-white",
-    name: "識別テープ 15mm 白",
-    category: "識別テープ",
-    description: "細幅ながら文字記入も可能な白色テープ。番号や記号を書き込んで個体識別に使えます。目印テープとしての携帯性と記録用途の両方を兼ね備えた製品です。",
-    color: "#FFFFFF",
-    colorName: "白",
-    thickness: "0.08mm",
-    width: "15mm",
-    length: "50m",
-    price: 145,
-    features: ["コンパクト", "文字書込み可", "非粘着"],
-    featured: false,
-    image: IMG_15MM,
-  },
-  // ── 斜線テープ ──
-  {
-    id: "diagonal-standard",
-    name: "斜線入り識別テープ",
-    category: "斜線テープ",
-    description: "2色の斜線柄で識別性を更に高めたプレミアムライン。複数業者が同一現場で作業する際の色分けに重宝されます。ピンク×青、黄×黒、ピンク×白の3色展開。",
-    color: "#FF69B4",
-    colorName: "ピンク×青・黄×黒・ピンク×白",
-    thickness: "0.08mm",
-    width: "30mm",
-    length: "50m",
-    price: 1250,
-    features: ["高識別性", "2色斜線柄", "3色展開"],
-    featured: true,
-    image: IMG_DIAGONAL,
-  },
-  // ── ナンバーテープ ──
-  {
-    id: "number-black-yellow",
-    name: "ナンバーテープ 黒ベース黄",
-    category: "ナンバーテープ",
-    description: "ミシン目入りの番号付き識別テープ。伐採木・調査木のナンバリング管理に最適。黒地に黄色の番号で視認性が高く、暗い林内でも読み取りやすい配色です。",
-    color: "#000000",
-    colorName: "黒ベース黄",
-    thickness: "0.15mm",
-    width: "20mm",
-    length: "50m",
-    price: 1360,
-    features: ["ミシン目入り", "番号付き", "高視認性"],
-    featured: true,
-    image: IMG_NUMBER_1,
-  },
-  {
-    id: "number-white-hookback",
-    name: "ナンバーテープ 白地フックバック",
-    category: "ナンバーテープ",
-    description: "白地にフックバック仕様のナンバーテープ。フックバック構造で枝や杭に素早く取り付け可能。調査木の個体管理やプロット調査の番号付けに活用されています。",
-    color: "#FFFFFF",
-    colorName: "白地フックバック",
-    thickness: "0.15mm",
-    width: "20mm",
-    length: "50m",
-    price: 1360,
-    features: ["フックバック", "番号付き", "取付簡単"],
-    featured: false,
-    image: IMG_NUMBER_2,
-  },
-];
+export const products: Product[] = ALL_SPECS.map((spec) => ({
+  id: spec.id,
+  name: spec.name,
+  category: CATEGORY_LABEL[spec.category],
+  description: spec.description,
+  thickness: `${spec.thickness}mm`,
+  width: `${spec.width}mm`,
+  length: `${spec.length}m`,
+  price: spec.wholesalePrice,
+  listPrice: spec.listPrice,
+  colors: spec.availableColors.map((c) => COLORS[c]),
+  featured: !!spec.featured,
+  image: pickImage(spec),
+}));
 
 export const categories = ["すべて", "識別テープ", "斜線テープ", "ナンバーテープ"];
 

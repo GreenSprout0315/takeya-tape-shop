@@ -4,3 +4,4 @@ node_modules/
 
 # ローカル生成物（PDF等）
 scripts/*.pdf
+.env*.local

@@ -2,8 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { Product } from "@/lib/products";
+import type { ColorInfo } from "@/lib/product-master";
 import Image from "next/image";
 import Link from "next/link";
+
+function Swatch({ color, size = "md" }: { color: ColorInfo; size?: "md" | "lg" }) {
+  const dim = size === "lg" ? "w-8 h-8" : "w-5 h-5";
+  if (Array.isArray(color.hex)) {
+    const [a, b] = color.hex;
+    return (
+      <span
+        title={color.name}
+        className={`inline-block ${dim} rounded-full border border-gray-300`}
+        style={{
+          background: `repeating-linear-gradient(45deg, ${a} 0 4px, ${b} 4px 8px)`,
+        }}
+      />
+    );
+  }
+  return (
+    <span
+      title={color.name}
+      className={`inline-block ${dim} rounded-full border border-gray-300`}
+      style={{ backgroundColor: color.hex }}
+    />
+  );
+}
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -16,6 +40,8 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       .finally(() => setLoaded(true));
   }, []);
 
+  const hasDiscount = product.listPrice > product.price;
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-16">
       <Link
@@ -26,7 +52,6 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       </Link>
 
       <div className="grid md:grid-cols-2 gap-16 mt-8">
-        {/* 商品画像 */}
         <div className="relative aspect-square overflow-hidden border border-gray-200 bg-gray-50">
           <Image
             src={product.image}
@@ -38,14 +63,18 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           />
         </div>
 
-        {/* 商品情報 */}
         <div className="flex flex-col justify-center">
-          <p className="text-xs tracking-[0.4em] uppercase text-[#E07B2A] mb-4">{product.category}</p>
-          <h1 className="text-4xl font-light tracking-wide text-[#1C3557] mb-2">{product.name}</h1>
+          <p className="text-xs tracking-[0.4em] uppercase text-[#E07B2A] mb-4">
+            {product.category}
+          </p>
+          <h1 className="text-3xl font-light tracking-wide text-[#1C3557] mb-2">
+            {product.name}
+          </h1>
 
-          <p className="text-gray-600 leading-relaxed mb-8 mt-4">{product.description}</p>
+          <p className="text-gray-600 leading-relaxed mb-8 mt-4">
+            {product.description}
+          </p>
 
-          {/* 仕様 */}
           <div className="mb-8">
             <p className="text-xs tracking-widest uppercase text-gray-400 mb-3">仕様</p>
             <div className="grid grid-cols-3 gap-3">
@@ -64,14 +93,16 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             </div>
           </div>
 
-          {/* 特長タグ */}
           <div className="mb-8">
-            <p className="text-xs tracking-widest uppercase text-gray-400 mb-3">特長</p>
-            <div className="flex flex-wrap gap-2">
-              {product.features.map((f) => (
-                <span key={f} className="px-3 py-1 text-xs border border-[#E07B2A] text-[#E07B2A] tracking-wider">
-                  {f}
-                </span>
+            <p className="text-xs tracking-widest uppercase text-gray-400 mb-3">
+              対応色（{product.colors.length}色）
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {product.colors.map((c) => (
+                <div key={c.id} className="flex items-center gap-2">
+                  <Swatch color={c} size="lg" />
+                  <span className="text-xs text-gray-600">{c.name}</span>
+                </div>
               ))}
             </div>
           </div>
@@ -79,11 +110,20 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           <div className="border-t border-gray-100 pt-8">
             {loaded && loggedIn ? (
               <>
-                {/* 単価 */}
                 <div className="mb-6">
+                  {hasDiscount && (
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-400 tracking-wider">定価</span>
+                      <span className="text-sm text-gray-400 line-through">
+                        ¥{product.listPrice.toLocaleString()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-400 tracking-wider">単価（税抜）</span>
-                    <span className="text-3xl font-light text-[#1C3557]">¥{product.price.toLocaleString()}</span>
+                    <span className="text-3xl font-light text-[#1C3557]">
+                      ¥{product.price.toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
