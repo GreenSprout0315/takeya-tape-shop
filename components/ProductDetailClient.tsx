@@ -40,9 +40,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       .finally(() => setLoaded(true));
   }, []);
 
-  // 斜線入りテープは未ログイン時にログインゲートで隠す（BtoB特別ライン）
+  // 斜線入りテープはログイン確定済みの時だけ商品情報を表示。
+  // SSR初期レンダ・セッション読込中・未ログインは全てゲート表示。
   const isRestricted = product.category === "斜線テープ";
-  if (loaded && !loggedIn && isRestricted) {
+  if (isRestricted && (!loaded || !loggedIn)) {
     return (
       <div className="max-w-xl mx-auto px-6 py-24 text-center">
         <p className="text-xs tracking-[0.4em] uppercase text-[#E07B2A] mb-3">

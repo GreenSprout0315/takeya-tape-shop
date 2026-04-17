@@ -18,18 +18,20 @@ function ProductsContent() {
       .finally(() => setSessionLoaded(true));
   }, []);
 
-  // 未ログインで「斜線テープ」カテゴリ選択中なら「すべて」にリセット
+  // 斜線テープが非表示状態で「斜線テープ」選択中なら「すべて」にリセット
   useEffect(() => {
-    if (sessionLoaded && !loggedIn && selected === "斜線テープ") {
+    if ((!sessionLoaded || !loggedIn) && selected === "斜線テープ") {
       setSelected("すべて");
     }
   }, [sessionLoaded, loggedIn, selected]);
 
-  // 未ログイン時は斜線テープを一覧から除外（BtoB特別ライン）
-  const visibleProducts = sessionLoaded && !loggedIn
+  // 斜線テープは「ログイン確定済み」のときだけ見せる（BtoB特別ライン）
+  // sessionLoaded 前 or 未ログインは隠す。SSR初期レンダでも斜線が漏れない
+  const hideDiagonal = !sessionLoaded || !loggedIn;
+  const visibleProducts = hideDiagonal
     ? products.filter((p) => p.category !== "斜線テープ")
     : products;
-  const visibleCategories = sessionLoaded && !loggedIn
+  const visibleCategories = hideDiagonal
     ? categories.filter((c) => c !== "斜線テープ")
     : categories;
 

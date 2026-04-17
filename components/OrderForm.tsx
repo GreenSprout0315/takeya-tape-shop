@@ -144,9 +144,10 @@ export default function OrderForm() {
 
   const hasSpecialPrices = priceMap !== null && Object.keys(priceMap).length > 0;
 
-  // 未ログイン時は斜線入りテープを非表示（BtoB特別ライン）
+  // 斜線入りテープはログイン確定済みの時だけ表示（BtoB特別ライン）
+  // 未ログインまたは読込中はゲスト扱いで隠す → SSR初期レンダでも漏れない
   const visibleCategories = useMemo<ProductCategory[]>(
-    () => (sessionLoaded && !loggedIn ? CATEGORIES_GUEST : CATEGORIES_ALL),
+    () => (sessionLoaded && loggedIn ? CATEGORIES_ALL : CATEGORIES_GUEST),
     [sessionLoaded, loggedIn]
   );
 
