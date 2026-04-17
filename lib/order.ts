@@ -212,9 +212,11 @@ export function buildQuote(
       throw new Error(`spec not found: ${line.specId}`);
     }
     const unitPrice =
-      priceMap && priceMap[spec.id] !== undefined
-        ? priceMap[spec.id]
-        : spec.wholesalePrice;
+      priceMap === null
+        ? spec.listPrice
+        : priceMap[spec.id] !== undefined
+          ? priceMap[spec.id]
+          : spec.wholesalePrice;
     const color = COLORS[line.colorId];
     return {
       specId: spec.id,

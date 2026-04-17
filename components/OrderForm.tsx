@@ -81,11 +81,16 @@ function renderSwatch(colorId: ColorId) {
 // メインコンポーネント
 // ───────────────────────────────────────────────
 
-/** specId と priceMap から適用単価を返す（クライアント側） */
+/**
+ * specId と priceMap から適用単価を返す（クライアント側）
+ *
+ * - priceMap === null: 未ログイン → listPrice（定価）
+ * - priceMap に登録あり: その特別価格
+ * - priceMap に登録なし: wholesalePrice（実績あり = 常連客価格）
+ */
 function resolvePrice(spec: ProductSpec, priceMap: PriceMap | null): number {
-  if (priceMap && priceMap[spec.id] !== undefined) {
-    return priceMap[spec.id];
-  }
+  if (priceMap === null) return spec.listPrice;
+  if (priceMap[spec.id] !== undefined) return priceMap[spec.id];
   return spec.wholesalePrice;
 }
 

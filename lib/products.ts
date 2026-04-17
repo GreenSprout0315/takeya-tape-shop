@@ -55,7 +55,7 @@ export const products: Product[] = ALL_SPECS.map((spec) => ({
   thickness: `${spec.thickness}mm`,
   width: `${spec.width}mm`,
   length: `${spec.length}m`,
-  price: spec.wholesalePrice,
+  price: spec.listPrice,
   listPrice: spec.listPrice,
   colors: spec.availableColors.map((c) => COLORS[c]),
   featured: !!spec.featured,

@@ -31,14 +31,16 @@ export async function getCustomerPriceMap(
 
 /**
  * 商品スペックと価格マップから適用単価を取得
- * priceMap に登録があればその価格、なければ定価（wholesalePrice）
+ *
+ * - priceMap === null: 未ログイン → listPrice（定価）
+ * - priceMap に登録あり: その特別価格
+ * - priceMap に登録なし: wholesalePrice（実績あり金額 = 常連客価格）
  */
 export function getResolvedPrice(
   spec: ProductSpec,
   priceMap: CustomerPriceMap | null
 ): number {
-  if (priceMap && priceMap[spec.id] !== undefined) {
-    return priceMap[spec.id];
-  }
+  if (priceMap === null) return spec.listPrice;
+  if (priceMap[spec.id] !== undefined) return priceMap[spec.id];
   return spec.wholesalePrice;
 }
