@@ -26,7 +26,8 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-gray-400">
             <li><a href="/contact" className="hover:text-white transition-colors">お問い合わせ</a></li>
             <li><a href="/contact" className="hover:text-white transition-colors">見積もり依頼</a></li>
-            <li><a href="/contact" className="hover:text-white transition-colors">大量注文について</a></li>
+            <li><a href="/company-info" className="hover:text-white transition-colors">事業者情報</a></li>
+            <li><a href="/privacy" className="hover:text-white transition-colors">プライバシーポリシー</a></li>
           </ul>
         </div>
 

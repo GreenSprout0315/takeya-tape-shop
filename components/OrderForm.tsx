@@ -45,7 +45,8 @@ type LoggedInCustomer = {
 
 type QuantityMap = Record<string, number>; // "specId__colorId" → qty
 
-const CATEGORIES: ProductCategory[] = ["standard", "number", "diagonal"];
+const CATEGORIES_ALL: ProductCategory[] = ["standard", "number", "diagonal"];
+const CATEGORIES_GUEST: ProductCategory[] = ["standard", "number"];
 
 // ───────────────────────────────────────────────
 // ヘルパー
@@ -142,6 +143,19 @@ export default function OrderForm() {
   const [errors, setErrors] = useState<string[]>([]);
 
   const hasSpecialPrices = priceMap !== null && Object.keys(priceMap).length > 0;
+
+  // 未ログイン時は斜線入りテープを非表示（BtoB特別ライン）
+  const visibleCategories = useMemo<ProductCategory[]>(
+    () => (sessionLoaded && !loggedIn ? CATEGORIES_GUEST : CATEGORIES_ALL),
+    [sessionLoaded, loggedIn]
+  );
+
+  // 選択中カテゴリが非表示になったら standard へ戻す
+  useEffect(() => {
+    if (!visibleCategories.includes(activeCategory)) {
+      setActiveCategory("standard");
+    }
+  }, [visibleCategories, activeCategory]);
 
   // 見積計算（クライアント側でライブ表示、サーバーでも再計算）
   const lines: OrderLine[] = useMemo(() => {
@@ -445,7 +459,7 @@ export default function OrderForm() {
 
         {/* カテゴリータブ */}
         <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200">
-          {CATEGORIES.map((cat) => {
+          {visibleCategories.map((cat) => {
             const count = ALL_SPECS.filter((s) => s.category === cat).length;
             const active = activeCategory === cat;
             return (

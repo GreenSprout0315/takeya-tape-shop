@@ -18,9 +18,24 @@ function ProductsContent() {
       .finally(() => setSessionLoaded(true));
   }, []);
 
+  // 未ログインで「斜線テープ」カテゴリ選択中なら「すべて」にリセット
+  useEffect(() => {
+    if (sessionLoaded && !loggedIn && selected === "斜線テープ") {
+      setSelected("すべて");
+    }
+  }, [sessionLoaded, loggedIn, selected]);
+
+  // 未ログイン時は斜線テープを一覧から除外（BtoB特別ライン）
+  const visibleProducts = sessionLoaded && !loggedIn
+    ? products.filter((p) => p.category !== "斜線テープ")
+    : products;
+  const visibleCategories = sessionLoaded && !loggedIn
+    ? categories.filter((c) => c !== "斜線テープ")
+    : categories;
+
   const filtered = selected === "すべて"
-    ? products
-    : products.filter((p) => p.category === selected);
+    ? visibleProducts
+    : visibleProducts.filter((p) => p.category === selected);
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
@@ -32,7 +47,7 @@ function ProductsContent() {
 
       {/* カテゴリフィルター */}
       <div className="flex flex-wrap justify-center gap-6 mb-16">
-        {categories.map((cat) => (
+        {visibleCategories.map((cat) => (
           <button
             key={cat}
             onClick={() => setSelected(cat)}

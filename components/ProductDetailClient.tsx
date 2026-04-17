@@ -40,6 +40,40 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       .finally(() => setLoaded(true));
   }, []);
 
+  // 斜線入りテープは未ログイン時にログインゲートで隠す（BtoB特別ライン）
+  const isRestricted = product.category === "斜線テープ";
+  if (loaded && !loggedIn && isRestricted) {
+    return (
+      <div className="max-w-xl mx-auto px-6 py-24 text-center">
+        <p className="text-xs tracking-[0.4em] uppercase text-[#E07B2A] mb-3">
+          Members Only
+        </p>
+        <h1 className="text-2xl font-light tracking-wide text-[#1C3557] mb-6">
+          この商品はログイン後にご確認いただけます
+        </h1>
+        <p className="text-gray-500 text-sm leading-relaxed mb-8">
+          斜線入り識別テープは既存お取引先様向けの特別ラインです。
+          <br />
+          ログインしてご覧ください。
+        </p>
+        <Link
+          href="/login"
+          className="inline-block px-8 py-3 text-xs tracking-widest uppercase bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors"
+        >
+          ログイン
+        </Link>
+        <div className="mt-6">
+          <Link
+            href="/products"
+            className="text-xs text-gray-500 hover:text-[#1C3557]"
+          >
+            ← 商品一覧に戻る
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const hasDiscount = product.listPrice > product.price;
 
   return (
