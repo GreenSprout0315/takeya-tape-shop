@@ -19,6 +19,7 @@ import { getNextQuoteNumber } from "@/lib/counter";
 import { getSession } from "@/lib/auth";
 import { getCustomerPriceMap } from "@/lib/customer-db";
 import { persistOrder } from "@/lib/order-db";
+import { getDb } from "@/lib/db";
 
 type RawOrderInput = Omit<OrderRequest, "id" | "receivedAt"> & {
   id?: string;
@@ -73,11 +74,32 @@ export async function POST(request: Request) {
       );
     }
 
-    // 顧客マッチング & 見積生成（セッションからDB価格を取得）
+    // 顧客マッチング & 見積生成
+    //  ① ログイン顧客（session.customerId）があればそれを優先
+    //  ② 未ログインでも、会社名が customers テーブルの取引先名と一致すれば
+    //     自動で紐付け（SMILE実績ベースの顧客マスターと名寄せ）
     const session = await getSession();
+    let customerId: number | null = session?.customerId ?? null;
+    if (!customerId && orderRequest.companyName?.trim()) {
+      const sql = getDb();
+      const matched = await sql`
+        SELECT id FROM customers
+        WHERE name = ${orderRequest.companyName.trim()}
+        LIMIT 1
+      `;
+      if (matched.length > 0) {
+        customerId = matched[0].id;
+        console.log("[ORDER] 会社名マッチで customer_id を特定", {
+          requestId,
+          id,
+          companyName: orderRequest.companyName,
+          customerId,
+        });
+      }
+    }
     let dbPriceMap: Record<string, number> | null = null;
-    if (session?.customerId) {
-      dbPriceMap = await getCustomerPriceMap(session.customerId);
+    if (customerId) {
+      dbPriceMap = await getCustomerPriceMap(customerId);
     }
     const quote = buildQuote(orderRequest, { dbPriceMap });
 
@@ -100,7 +122,7 @@ export async function POST(request: Request) {
 
     // DB 永続化（失敗しても発注フロー自体は止めず、エラーログのみ）
     try {
-      await persistOrder(orderRequest, quote, session?.customerId ?? null);
+      await persistOrder(orderRequest, quote, customerId);
       console.log("[ORDER] DB永続化成功", { requestId, id });
     } catch (err) {
       console.error("[ORDER] DB永続化失敗（メール送信は継続）", {

@@ -32,7 +32,8 @@ type Candidate = {
   miyamotoCount: number;
 };
 
-const SRC = "C:\\greensprout\\.company\\sales\\clients\\takeya-shoji\\customer-candidates-B_2025.json";
+// 全期間取引実績のある 894社を対象に一括登録
+const SRC = "C:\\greensprout\\.company\\sales\\clients\\takeya-shoji\\customer-candidates-E_all.json";
 
 function formatDate(yyyymmdd: string): string {
   return `${yyyymmdd.slice(0, 4)}-${yyyymmdd.slice(4, 6)}-${yyyymmdd.slice(6, 8)}`;
