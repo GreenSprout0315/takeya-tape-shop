@@ -1,9 +1,17 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => setLoggedIn(!!data.user))
+      .catch(() => {});
+  }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
@@ -20,9 +28,11 @@ export default function Header() {
           <Link href="/products?category=識別テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
             識別テープ
           </Link>
-          <Link href="/products?category=斜線テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
-            斜線テープ
-          </Link>
+          {loggedIn && (
+            <Link href="/products?category=斜線テープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
+              斜線テープ
+            </Link>
+          )}
           <Link href="/products?category=ナンバーテープ" className="text-sm tracking-wide text-gray-500 hover:text-[#1C3557] transition-colors">
             ナンバーテープ
           </Link>
@@ -58,9 +68,11 @@ export default function Header() {
           <Link href="/products?category=識別テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
             識別テープ
           </Link>
-          <Link href="/products?category=斜線テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
-            斜線テープ
-          </Link>
+          {loggedIn && (
+            <Link href="/products?category=斜線テープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
+              斜線テープ
+            </Link>
+          )}
           <Link href="/products?category=ナンバーテープ" onClick={() => setMenuOpen(false)} className="text-sm text-gray-500 hover:text-[#1C3557] transition-colors py-2">
             ナンバーテープ
           </Link>

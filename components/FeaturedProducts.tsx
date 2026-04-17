@@ -5,7 +5,10 @@ import { getFeaturedProducts } from "@/lib/products";
 import ProductCard from "@/components/ProductCard";
 
 export default function FeaturedProducts() {
-  const featured = getFeaturedProducts();
+  // トップページからは斜線テープを常に除外（BtoB特別ラインのため）
+  const featured = getFeaturedProducts().filter(
+    (p) => p.category !== "斜線テープ"
+  );
   const [loggedIn, setLoggedIn] = useState(false);
   const [loaded, setLoaded] = useState(false);
 

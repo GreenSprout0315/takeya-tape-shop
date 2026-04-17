@@ -1,4 +1,16 @@
+"use client";
+import { useEffect, useState } from "react";
+
 export default function Footer() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data) => setLoggedIn(!!data.user))
+      .catch(() => {});
+  }, []);
+
   return (
     <footer className="bg-[#1C3557] text-white mt-24">
       <div className="max-w-6xl mx-auto px-6 py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -16,7 +28,9 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-gray-400">
             <li><a href="/products" className="hover:text-white transition-colors">すべての商品</a></li>
             <li><a href="/products?category=識別テープ" className="hover:text-white transition-colors">識別テープ</a></li>
-            <li><a href="/products?category=斜線テープ" className="hover:text-white transition-colors">斜線テープ</a></li>
+            {loggedIn && (
+              <li><a href="/products?category=斜線テープ" className="hover:text-white transition-colors">斜線テープ</a></li>
+            )}
             <li><a href="/products?category=ナンバーテープ" className="hover:text-white transition-colors">ナンバーテープ</a></li>
           </ul>
         </div>

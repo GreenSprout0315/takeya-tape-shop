@@ -71,7 +71,7 @@ export default function HomePage() {
           {[
             { num: "7", unit: "色", label: "カラーバリエーション" },
             { num: "40+", unit: "年", label: "森林・測量での実績" },
-            { num: "3", unit: "タイプ", label: "用途に合わせた仕様" },
+            { num: "2", unit: "タイプ", label: "用途に合わせた仕様" },
             { num: "全国", unit: "", label: "発送対応" },
           ].map((s) => (
             <div key={s.label}>
@@ -129,7 +129,7 @@ export default function HomePage() {
             <p className="text-xs tracking-[0.4em] uppercase text-[#E07B2A] mb-3">Product Lineup</p>
             <h2 className="text-3xl font-light tracking-wide text-[#1C3557]">用途で選ぶ識別テープ</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {[
               {
                 title: "識別テープ",
@@ -137,13 +137,6 @@ export default function HomePage() {
                 spec: "15mm / 30mm × 50m",
                 href: "/products?category=識別テープ",
                 colors: ["#FF69B4", "#DC143C", "#FF8C00", "#FFD700", "#228B22", "#1E90FF", "#FFFFFF"],
-              },
-              {
-                title: "斜線テープ",
-                desc: "2色の斜線柄で識別性を更に高めたテープ。複数業者が同一現場で作業する際の色分けに。植物繊維タイプもラインナップ。",
-                spec: "15mm / 30mm",
-                href: "/products?category=斜線テープ",
-                colors: ["#FF69B4", "#1E90FF", "#FFD700"],
               },
               {
                 title: "ナンバーテープ",
