@@ -29,6 +29,10 @@ async function migrate() {
     )
   `;
   console.log("  ✅ customers");
+  // SMILE 得意先コードを後付けで追加（既存テーブルにも適用）
+  await sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS smile_code TEXT`;
+  await sql`CREATE UNIQUE INDEX IF NOT EXISTS customers_smile_code_key ON customers(smile_code) WHERE smile_code IS NOT NULL`;
+  console.log("  ✅ customers.smile_code (SMILE得意先コード)");
 
   // ── customer_prices ──
   await sql`
