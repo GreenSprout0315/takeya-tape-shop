@@ -574,6 +574,28 @@ export default function OrderForm() {
               ※ 商品を1点以上選択してください
             </p>
           )}
+          {(() => {
+            const FREE_SHIP = 30000;
+            if (quoteDraft.subtotal === 0) {
+              return (
+                <p className="mt-3 text-xs text-gray-400">
+                  ※ 税抜 30,000円以上のご注文で送料無料
+                </p>
+              );
+            }
+            if (quoteDraft.subtotal >= FREE_SHIP) {
+              return (
+                <p className="mt-3 text-xs font-medium text-[#2A7D4F]">
+                  ✓ 送料無料（税抜 30,000円以上）
+                </p>
+              );
+            }
+            return (
+              <p className="mt-3 text-xs text-[#E07B2A]">
+                あと <strong>{formatJpy(FREE_SHIP - quoteDraft.subtotal)}</strong>（税抜）で送料無料になります
+              </p>
+            );
+          })()}
         </div>
       </section>
 

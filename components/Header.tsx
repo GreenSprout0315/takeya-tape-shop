@@ -5,13 +5,35 @@ import { useEffect, useState } from "react";
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then((r) => r.json())
-      .then((data) => setLoggedIn(!!data.user))
-      .catch(() => {});
+    (async () => {
+      try {
+        const sessRes = await fetch("/api/auth/session");
+        const sess = await sessRes.json();
+        if (!sess.user) return;
+        setLoggedIn(true);
+        if (sess.user.role === "admin") {
+          setDisplayName("管理者");
+        } else if (sess.user.customerId) {
+          const priceRes = await fetch("/api/order/my-prices");
+          const data = await priceRes.json();
+          if (data.customer?.name) setDisplayName(data.customer.name);
+        }
+      } catch {
+        /* noop */
+      }
+    })();
   }, []);
+
+  async function handleLogout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/";
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
@@ -42,9 +64,25 @@ export default function Header() {
           <Link href="/order" className="text-sm tracking-widest uppercase px-4 py-2 bg-[#E07B2A] text-white hover:bg-[#c96e22] transition-colors">
             発注する
           </Link>
-          <Link href="/login" className="text-xs text-gray-400 hover:text-[#1C3557] transition-colors">
-            ログイン
-          </Link>
+          {loggedIn ? (
+            <div className="flex items-center gap-3 pl-2 border-l border-gray-200">
+              {displayName && (
+                <span className="text-xs text-[#1C3557] max-w-[160px] truncate" title={displayName}>
+                  {displayName} 様
+                </span>
+              )}
+              <button
+                onClick={handleLogout}
+                className="text-xs text-gray-400 hover:text-[#E07B2A] transition-colors"
+              >
+                ログアウト
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" className="text-xs text-gray-400 hover:text-[#1C3557] transition-colors">
+              ログイン
+            </Link>
+          )}
         </nav>
 
         {/* Hamburger */}
@@ -82,9 +120,26 @@ export default function Header() {
           <Link href="/order" onClick={() => setMenuOpen(false)} className="text-sm tracking-widest uppercase px-4 py-3 bg-[#E07B2A] text-white text-center">
             発注する
           </Link>
-          <Link href="/login" onClick={() => setMenuOpen(false)} className="text-xs text-gray-400 hover:text-[#1C3557] transition-colors py-2">
-            ログイン
-          </Link>
+          {loggedIn ? (
+            <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+              {displayName && (
+                <span className="text-xs text-[#1C3557] truncate">{displayName} 様</span>
+              )}
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleLogout();
+                }}
+                className="text-xs text-gray-400 hover:text-[#E07B2A] transition-colors py-2"
+              >
+                ログアウト
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" onClick={() => setMenuOpen(false)} className="text-xs text-gray-400 hover:text-[#1C3557] transition-colors py-2">
+              ログイン
+            </Link>
+          )}
         </nav>
       )}
     </header>
