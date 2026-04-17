@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
+type LookupMatch = {
+  id: number;
+  name: string;
+  smile_code: string | null;
+  notes: string | null;
+  status: string;
+};
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -15,10 +23,28 @@ export default function NewCustomerPage() {
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [matches, setMatches] = useState<LookupMatch[]>([]);
+  const [showSuggest, setShowSuggest] = useState(false);
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
+
+  // 会社名入力 → 既存取引先を部分一致検索（デバウンス）
+  useEffect(() => {
+    const q = form.name.trim();
+    if (q.length < 2) {
+      setMatches([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/admin/customers/lookup?q=${encodeURIComponent(q)}`)
+        .then((r) => r.json())
+        .then((data: { matches: LookupMatch[] }) => setMatches(data.matches || []))
+        .catch(() => {});
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [form.name]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,13 +85,43 @@ export default function NewCustomerPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="会社名" required>
-            <input
-              type="text"
-              required
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C3557]"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={form.name}
+                onChange={(e) => update("name", e.target.value)}
+                onFocus={() => setShowSuggest(true)}
+                onBlur={() => setTimeout(() => setShowSuggest(false), 150)}
+                autoComplete="off"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1C3557]"
+              />
+              {showSuggest && matches.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-64 overflow-y-auto">
+                  <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+                    既存取引先 {matches.length}件 ・ クリックで編集画面へ
+                  </div>
+                  {matches.map((m) => (
+                    <a
+                      key={m.id}
+                      href={`/admin/customers/${m.id}`}
+                      className="block px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-[#1C3557]">{m.name}</span>
+                        <span className="text-xs text-gray-500 font-mono">{m.smile_code || "—"}</span>
+                      </div>
+                      {m.notes && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{m.notes}</p>
+                      )}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              入力すると SMILE 実績のある既存取引先を自動検索します
+            </p>
           </Field>
 
           <Field label="担当者名">

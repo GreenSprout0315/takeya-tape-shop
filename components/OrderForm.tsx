@@ -136,6 +136,34 @@ export default function OrderForm() {
       .finally(() => setSessionLoaded(true));
   }, []);
 
+  // 未ログイン訪問者の会社名 → 特別価格 ルックアップ（SMILE 実績と名寄せ）
+  // ログイン中は session の priceMap が優先なので実行不要
+  const [guestMatchedName, setGuestMatchedName] = useState<string | null>(null);
+  useEffect(() => {
+    if (loggedIn) return;
+    const name = customerForm.companyName.trim();
+    if (!name) {
+      setPriceMap(null);
+      setGuestMatchedName(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/order/lookup-prices?name=${encodeURIComponent(name)}`)
+        .then((r) => r.json())
+        .then((data: { matched: boolean; customerName?: string; prices: PriceMap }) => {
+          if (data.matched) {
+            setPriceMap(data.prices);
+            setGuestMatchedName(data.customerName || name);
+          } else {
+            setPriceMap(null);
+            setGuestMatchedName(null);
+          }
+        })
+        .catch(() => {});
+    }, 400); // デバウンス
+    return () => clearTimeout(timer);
+  }, [customerForm.companyName, loggedIn]);
+
   const [quantities, setQuantities] = useState<QuantityMap>({});
   const [activeCategory, setActiveCategory] =
     useState<ProductCategory>("standard");

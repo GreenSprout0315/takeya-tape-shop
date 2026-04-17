@@ -131,6 +131,33 @@ export default function PricingPage() {
         </div>
         <div className="flex gap-2">
           <button
+            onClick={async () => {
+              const csv = prompt(
+                "CSV（spec_id,price 形式、ヘッダ行OK、#でコメント）を貼り付けてください:\n\n例:\nspec_id,price\nstd-008-15-50,115\nstd-008-30-50,230"
+              );
+              if (!csv) return;
+              const res = await fetch(`/api/admin/customers/${id}/pricing/upload`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ csv }),
+              });
+              const data = await res.json();
+              if (res.ok) {
+                setMessage(
+                  `CSV取込: ${data.upserted}件upsert、エラー${data.errorCount}件${
+                    data.errors?.length ? "\n" + data.errors.join("\n") : ""
+                  }`
+                );
+                setTimeout(() => window.location.reload(), 1500);
+              } else {
+                setMessage(`エラー: ${data.error}`);
+              }
+            }}
+            className="px-4 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors text-sm"
+          >
+            CSV取込
+          </button>
+          <button
             onClick={handleCopy}
             className="px-4 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors text-sm"
           >

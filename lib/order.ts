@@ -123,10 +123,17 @@ export const QUOTE_STATUS_LABELS: Record<QuoteStatus, string> = {
 };
 
 /**
- * 当システムで扱う発注ライフサイクル: issued → approved まで。
- * 以降の出荷・請求・入金は別サイクル（社内既存運用）で対応する。
+ * 発注ライフサイクル: 見積 → 承認 → 出荷 → 請求 → 入金（完了）
+ * 管理画面からワンクリックで順次進行できる。
  */
-export const STATUS_FLOW: QuoteStatus[] = ["issued", "approved"];
+export const STATUS_FLOW: QuoteStatus[] = [
+  "issued",
+  "approved",
+  "shipping",
+  "shipped",
+  "invoiced",
+  "paid",
+];
 
 /** 現在ステータスから次に進めるステータスを返す。終端なら null */
 export function getNextStatus(current: QuoteStatus): QuoteStatus | null {
@@ -138,6 +145,10 @@ export function getNextStatus(current: QuoteStatus): QuoteStatus | null {
 /** 「次へ進める」ボタンに表示するアクション文言 */
 export const STATUS_ACTION_LABELS: Partial<Record<QuoteStatus, string>> = {
   issued: "承認する",
+  approved: "出荷準備に進める",
+  shipping: "発送済みにする",
+  shipped: "請求済みにする",
+  invoiced: "入金確認（完了）",
 };
 
 // ──────────────────────────────────────────────────────────────

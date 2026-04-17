@@ -10,6 +10,10 @@ const STATUS_FILTERS: Array<QuoteStatus | "all"> = [
   "all",
   "issued",
   "approved",
+  "shipping",
+  "shipped",
+  "invoiced",
+  "paid",
   "cancelled",
 ];
 

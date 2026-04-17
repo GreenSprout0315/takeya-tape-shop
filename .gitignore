@@ -2,6 +2,9 @@ node_modules/
 .next/
 .vercel
 
+# TS ビルドキャッシュ
+tsconfig.tsbuildinfo
+
 # ローカル生成物（PDF等）
 scripts/*.pdf
 .env*.local
