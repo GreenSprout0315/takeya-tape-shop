@@ -92,7 +92,7 @@ export default function ContactPage() {
           </label>
           <input
             type="text"
-            placeholder="例: 配管識別テープ 赤 50mm × 10m × 100本"
+            placeholder="例: 識別テープ 0.08×30mm×50m ピンク 10巻"
             className="w-full border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:border-[#1C3557] transition-colors"
           />
         </div>
