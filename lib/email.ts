@@ -394,6 +394,11 @@ function renderCustomerConfirmHtml(
               <td style="padding:10px 0;text-align:right;font-size:20px;color:#E07B2A;font-weight:bold;border-top:2px solid #1C3557;">${formatJpy(quote.total)}</td>
             </tr>
           </table>
+          ${
+            quote.shippingFeeWaived
+              ? `<div style="margin-top:10px;padding:10px 14px;background:#EAF7EE;border-left:4px solid #2A7D4F;font-size:13px;color:#2A7D4F;font-weight:bold;">✓ 初回限定 送料無料を適用いたしました（金額に関わらず、今回のご発注の送料は当社にて負担いたします）</div>`
+              : ""
+          }
           <div style="font-size:10px;color:#9CA3AF;text-align:right;margin-top:4px;">※正式金額は後日お送りする見積書にてご確認ください</div>
         </td></tr>
 
@@ -534,6 +539,13 @@ function renderOrderEmailText(order: OrderRequest, quote: Quote): string {
     `合計金額（税込）: ${formatJpy(quote.total)}`
   );
 
+  if (quote.shippingFeeWaived) {
+    lines.push(
+      "",
+      "※ 初回限定 送料無料を適用いたしました（金額に関わらず、今回のご発注の送料は当社にて負担いたします）"
+    );
+  }
+
   if (order.notes) {
     lines.push("", "── 備考 ──", order.notes);
   }
@@ -585,7 +597,8 @@ async function sendInternalNotification(
 ): Promise<EmailSendResult> {
   const isSpecial = quote.priceTier === "special";
   const quoteRef = quote.quoteNumber ? `見積№${quote.quoteNumber}` : order.id;
-  const subject = `【竹谷商事 発注通知】${order.companyName} 様 / ${formatJpy(quote.total)}（税込）${isSpecial ? " [特価]" : ""} / ${quoteRef}`;
+  const firstFreeTag = quote.shippingFeeWaived ? " [初回送料無料]" : "";
+  const subject = `【竹谷商事 発注通知】${order.companyName} 様 / ${formatJpy(quote.total)}（税込）${isSpecial ? " [特価]" : ""}${firstFreeTag} / ${quoteRef}`;
 
   try {
     const info = await transporter.sendMail({
