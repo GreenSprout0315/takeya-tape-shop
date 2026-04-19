@@ -114,6 +114,7 @@ export default function OrderForm() {
   const [loggedInCustomer, setLoggedInCustomer] = useState<LoggedInCustomer | null>(null);
   const [priceMap, setPriceMap] = useState<PriceMap | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [freeShipEligible, setFreeShipEligible] = useState(false);
 
   // セッション読み込み
   useEffect(() => {
@@ -124,6 +125,7 @@ export default function OrderForm() {
           setLoggedIn(true);
           setLoggedInCustomer(data.customer);
           setPriceMap(data.prices);
+          setFreeShipEligible(data.firstOrderFreeShippingEligible === true);
           // 顧客情報を自動入力
           setCustomerForm((prev) => ({
             ...prev,
@@ -608,6 +610,7 @@ export default function OrderForm() {
               return (
                 <p className="mt-3 text-xs text-gray-400">
                   ※ 税抜 30,000円以上のご注文で送料無料
+                  {freeShipEligible && "（初回ご登録のお客様は金額に関わらず送料無料）"}
                 </p>
               );
             }
@@ -615,6 +618,13 @@ export default function OrderForm() {
               return (
                 <p className="mt-3 text-xs font-medium text-[#2A7D4F]">
                   ✓ 送料無料（税抜 30,000円以上）
+                </p>
+              );
+            }
+            if (freeShipEligible) {
+              return (
+                <p className="mt-3 text-xs font-medium text-[#2A7D4F]">
+                  ✓ 初回限定 送料無料（金額に関わらず適用）
                 </p>
               );
             }

@@ -753,6 +753,27 @@ function EstimateDocument({ order, quote }: Props) {
             );
           })}
 
+          {/* 初回限定 送料無料行（対象顧客のみ） */}
+          {quote.shippingFeeWaived && (
+            <View style={styles.tableEmptyRow}>
+              <View style={styles.colNo} />
+              <View style={styles.colName}>
+                <Text style={styles.cellNoteText}>※ 初回限定 送料無料 適用</Text>
+              </View>
+              <View style={styles.colIrisuu} />
+              <View style={styles.colKosuu} />
+              <View style={styles.colQty} />
+              <View style={styles.colUnit} />
+              <View style={styles.colUnitPrice}>
+                <Text style={styles.cellSummaryLabel}>送料</Text>
+              </View>
+              <View style={styles.colAmount}>
+                <Text style={styles.cellSummaryValue}>¥0</Text>
+              </View>
+              <View style={styles.colNote} />
+            </View>
+          )}
+
           {/* 税注記行 + (内消費税等) */}
           <View style={styles.tableEmptyRow}>
             <View style={styles.colNo} />
@@ -790,9 +811,12 @@ function EstimateDocument({ order, quote }: Props) {
             <View style={styles.colNote} />
           </View>
 
-          {/* 空行でページを埋める（税注記2行分を差し引く） */}
+          {/* 空行でページを埋める（税注記2行分+送料行分を差し引く） */}
           {Array.from({
-            length: Math.max(0, MAX_ROWS - displayLines.length - 3),
+            length: Math.max(
+              0,
+              MAX_ROWS - displayLines.length - 3 - (quote.shippingFeeWaived ? 1 : 0)
+            ),
           }).map((_, i) => (
             <View key={`empty-${i}`} style={styles.tableEmptyRow}>
               <View style={styles.colNo} />

@@ -83,6 +83,11 @@ export default async function AdminOrderDetailPage({
                     特価
                   </span>
                 )}
+                {order.shipping_fee_waived && (
+                  <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-[#2A7D4F]/10 text-[#2A7D4F] rounded">
+                    初回送料無料
+                  </span>
+                )}
               </dd>
             </div>
             <div className="flex">

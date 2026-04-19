@@ -33,6 +33,10 @@ async function migrate() {
   await sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS smile_code TEXT`;
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS customers_smile_code_key ON customers(smile_code) WHERE smile_code IS NOT NULL`;
   console.log("  ✅ customers.smile_code (SMILE得意先コード)");
+  // 初回EC発注 送料無料機能（2026-04-19）
+  await sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS first_order_free_shipping_eligible BOOLEAN NOT NULL DEFAULT TRUE`;
+  await sql`ALTER TABLE customers ADD COLUMN IF NOT EXISTS first_ec_order_at TIMESTAMPTZ`;
+  console.log("  ✅ customers.first_order_free_shipping_eligible / first_ec_order_at");
 
   // ── customer_prices ──
   await sql`
@@ -112,6 +116,8 @@ async function migrate() {
     )
   `;
   console.log("  ✅ orders");
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_fee_waived BOOLEAN NOT NULL DEFAULT FALSE`;
+  console.log("  ✅ orders.shipping_fee_waived");
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_orders_received_at ON orders(received_at DESC)`;
 

@@ -108,6 +108,11 @@ export default async function AdminOrdersPage({
                         特価
                       </span>
                     )}
+                    {o.shipping_fee_waived && (
+                      <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-[#2A7D4F]/10 text-[#2A7D4F] rounded">
+                        初回
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{o.contact_name}</td>
                   <td className="px-4 py-3 text-right font-medium text-[#1C3557]">

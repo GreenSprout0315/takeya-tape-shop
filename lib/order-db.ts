@@ -35,6 +35,7 @@ export type OrderRow = {
   status: QuoteStatus;
   status_updated_at: string;
   created_at: string;
+  shipping_fee_waived: boolean;
 };
 
 export type OrderLineRow = {
@@ -55,7 +56,8 @@ export type OrderWithLines = OrderRow & { lines: OrderLineRow[] };
 export async function persistOrder(
   req: OrderRequest,
   quote: Quote,
-  customerId: number | null
+  customerId: number | null,
+  opts: { shippingFeeWaived: boolean } = { shippingFeeWaived: false }
 ): Promise<void> {
   const sql = getDb();
 
@@ -63,7 +65,7 @@ export async function persistOrder(
     INSERT INTO orders (
       id, quote_number, received_at, company_name, contact_name, email,
       phone, zip_code, shipping_address, desired_delivery, notes,
-      customer_id, price_tier, subtotal, tax, total, status
+      customer_id, price_tier, subtotal, tax, total, status, shipping_fee_waived
     ) VALUES (
       ${req.id}, ${quote.quoteNumber ?? null}, ${req.receivedAt},
       ${req.companyName}, ${req.contactName}, ${req.email},
@@ -71,7 +73,7 @@ export async function persistOrder(
       ${req.shippingAddress ?? null}, ${req.desiredDelivery ?? null},
       ${req.notes ?? null}, ${customerId},
       ${quote.priceTier}, ${quote.subtotal}, ${quote.tax}, ${quote.total},
-      'issued'
+      'issued', ${opts.shippingFeeWaived}
     )
   `;
 
@@ -198,6 +200,7 @@ export function toQuote(row: OrderWithLines): Quote {
     tax: row.tax,
     total: row.total,
     status: row.status,
+    shippingFeeWaived: row.shipping_fee_waived,
     notes: row.notes ?? undefined,
   };
 }
