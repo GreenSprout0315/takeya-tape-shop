@@ -44,3 +44,47 @@ export function getResolvedPrice(
   if (priceMap[spec.id] !== undefined) return priceMap[spec.id];
   return spec.wholesalePrice;
 }
+
+/**
+ * 顧客の初回送料無料権利を取得
+ * - 顧客が存在しない場合は false（権利なし）
+ */
+export async function getFirstOrderFreeShippingEligibility(
+  customerId: number
+): Promise<boolean> {
+  const sql = getDb();
+  const rows = await sql`
+    SELECT first_order_free_shipping_eligible AS eligible
+    FROM customers
+    WHERE id = ${customerId}
+    LIMIT 1
+  `;
+  if (rows.length === 0) return false;
+  return rows[0].eligible === true;
+}
+
+/**
+ * 初回発注の記録と、送料無料権利の消費を行う
+ * - consumeEligibility=true: eligible フラグを false に更新
+ * - first_ec_order_at は NULL の場合のみ NOW() を記録（対象/対象外問わず）
+ */
+export async function markFirstOrderCompleted(
+  customerId: number,
+  opts: { consumeEligibility: boolean }
+): Promise<void> {
+  const sql = getDb();
+  if (opts.consumeEligibility) {
+    await sql`
+      UPDATE customers
+      SET first_order_free_shipping_eligible = FALSE,
+          first_ec_order_at = COALESCE(first_ec_order_at, NOW())
+      WHERE id = ${customerId}
+    `;
+  } else {
+    await sql`
+      UPDATE customers
+      SET first_ec_order_at = COALESCE(first_ec_order_at, NOW())
+      WHERE id = ${customerId}
+    `;
+  }
+}

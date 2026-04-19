@@ -17,9 +17,14 @@ import {
 import { sendOrderNotification } from "@/lib/email";
 import { getNextQuoteNumber } from "@/lib/counter";
 import { getSession } from "@/lib/auth";
-import { getCustomerPriceMap } from "@/lib/customer-db";
+import {
+  getCustomerPriceMap,
+  getFirstOrderFreeShippingEligibility,
+  markFirstOrderCompleted,
+} from "@/lib/customer-db";
 import { persistOrder } from "@/lib/order-db";
 import { getDb } from "@/lib/db";
+import { applyFirstOrderShipping } from "@/lib/first-order-shipping";
 
 type RawOrderInput = Omit<OrderRequest, "id" | "receivedAt"> & {
   id?: string;
@@ -103,6 +108,21 @@ export async function POST(request: Request) {
     }
     const quote = buildQuote(orderRequest, { dbPriceMap });
 
+    // 初回送料無料の判定
+    let shippingFeeWaived = false;
+    let consumesEligibility = false;
+    if (customerId) {
+      const eligible = await getFirstOrderFreeShippingEligibility(customerId);
+      const decision = applyFirstOrderShipping({
+        customerId,
+        firstOrderFreeShippingEligible: eligible,
+        subtotal: quote.subtotal,
+      });
+      shippingFeeWaived = decision.shippingFeeWaived;
+      consumesEligibility = decision.consumesEligibility;
+      quote.shippingFeeWaived = shippingFeeWaived;
+    }
+
     // 見積番号（連番）を Vercel Blob の原子カウンターから採番
     //  失敗してもメール送信を止めないよう、エラーは捕捉する
     try {
@@ -122,8 +142,30 @@ export async function POST(request: Request) {
 
     // DB 永続化（失敗しても発注フロー自体は止めず、エラーログのみ）
     try {
-      await persistOrder(orderRequest, quote, customerId);
+      await persistOrder(orderRequest, quote, customerId, {
+        shippingFeeWaived,
+      });
       console.log("[ORDER] DB永続化成功", { requestId, id });
+      if (customerId) {
+        try {
+          await markFirstOrderCompleted(customerId, {
+            consumeEligibility: consumesEligibility,
+          });
+          console.log("[ORDER] 初回発注記録・送料無料権利を更新", {
+            requestId,
+            id,
+            customerId,
+            consumesEligibility,
+            shippingFeeWaived,
+          });
+        } catch (err) {
+          console.error("[ORDER] 初回発注記録失敗（発注自体は完了）", {
+            requestId,
+            id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     } catch (err) {
       console.error("[ORDER] DB永続化失敗（メール送信は継続）", {
         requestId,

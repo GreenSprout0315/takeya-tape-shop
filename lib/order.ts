@@ -97,6 +97,8 @@ export type Quote = {
   total: number;
   /** ステータス */
   status: QuoteStatus;
+  /** 初回限定送料無料が適用されたか */
+  shippingFeeWaived?: boolean;
   /** 備考 */
   notes?: string;
 };
