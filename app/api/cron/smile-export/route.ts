@@ -5,9 +5,10 @@ import { buildSmileCsv } from "@/lib/smile-csv";
 /**
  * GET /api/cron/smile-export
  *
- * Vercel Cron から毎日 12:00 / 16:00 (JST) に呼ばれる。
- * 前回実行時刻以降の approved〜paid な受注を SMILE 取込CSVに変換し、
+ * Vercel Cron から毎日 14:00 JST (05:00 UTC) に呼ばれる。
+ * 過去24時間分の approved〜paid な受注を SMILE 取込CSVに変換し、
  * 宮本さん & 熊部さんにメール送信する。
+ * Vercel Hobby プランの制約で 1日1回に設定。
  *
  * Vercel Cron 認証: header "authorization: Bearer CRON_SECRET"
  * （vercel.json で crons 設定、CRON_SECRET は Vercel の環境変数）
