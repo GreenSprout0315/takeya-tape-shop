@@ -7,4 +7,7 @@ tsconfig.tsbuildinfo
 
 # ローカル生成物（PDF等）
 scripts/*.pdf
+scripts/tmp-*.mjs
+scripts/tmp-*.ts
 .env*.local
+.env.production
